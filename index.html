@@ -136,6 +136,25 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 16px
 #toast{position:fixed;bottom:24px;right:24px;padding:12px 20px;background:var(--yellow);color:var(--blue-bg);font-family:'Inter',sans-serif;font-size:12px;font-weight:700;border-radius:8px;transform:translateY(70px);opacity:0;transition:all 0.3s;z-index:999;max-width:300px;}
 #toast.show{transform:translateY(0);opacity:1;}
 #toast.err{background:var(--red);color:white;}
+@media(max-width:600px){
+  .nav-title{display:none;}
+  .nav-char{font-size:15px;}
+  .nav-tab{padding:0 7px;font-size:9px;}
+  .view{padding:16px 12px;}
+  .sb-header h1{font-size:28px;}
+  .teams-grid{grid-template-columns:1fr;}
+  .instr-grid{grid-template-columns:1fr !important;}
+  .quiz-card{padding:18px 14px;}
+  .q-text{font-size:16px;}
+  .mc-option{font-size:14px;padding:12px 12px;}
+  .btn{width:100%;margin-bottom:6px;box-sizing:border-box;}
+  .fac-row .btn,.fac-grid .btn-sm{width:auto;margin-bottom:0;}
+  .btn-sm{min-height:44px;}
+  .algo-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  .fac-span-2{grid-column:auto !important;}
+  .answer-row .ans-val{max-width:110px;}
+  #toast{left:12px;right:12px;max-width:none;bottom:16px;}
+}
 </style>
 </head>
 <body>
@@ -168,7 +187,7 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 16px
       <span id="instr-chevron" style="color:var(--yellow);font-size:13px;transition:transform 0.3s;display:inline-block;">▼</span>
     </button>
     <div id="instr-body" style="display:none;background:var(--blue-card);border:1px solid var(--white-15);border-top:none;border-radius:0 0 12px 12px;padding:20px 24px;">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+      <div class="instr-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
         <div>
           <div style="font-size:10px;letter-spacing:0.12em;color:var(--yellow);text-transform:uppercase;margin-bottom:8px;font-weight:700;">Step 1 · Designate one person</div>
           <div style="font-size:14px;line-height:1.6;color:var(--white-70);">One person per team opens this app and selects your team from the <strong style="color:var(--yellow);">问答 Quiz</strong> tab. Only one device per team. Multiple devices on the same team may cause conflicts.</div>
@@ -251,11 +270,11 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 16px
       <button class="btn btn-gold" onclick="applySocial()">Apply 社会分 Social Baseline</button>
       <p id="social-status" style="font-size:11px;color:#7DEBA8;font-family:'DM Mono',monospace;margin-top:8px;display:none;">✓ Social scores applied.</p>
     </div>
-    <div class="fac-card" style="grid-column:span 2;">
+    <div class="fac-card fac-span-2" style="grid-column:span 2;">
       <h3>📜 Activity Log</h3>
       <div class="log-list" id="activity-log"><div style="color:rgba(245,237,216,0.2);">No activity yet.</div></div>
     </div>
-    <div class="fac-card" style="grid-column:span 2;border-color:var(--red);">
+    <div class="fac-card fac-span-2" style="grid-column:span 2;border-color:var(--red);">
       <h3 style="color:var(--red-light);">⚠ Danger Zone</h3>
       <p style="font-size:13px;color:rgba(245,237,216,0.5);font-family:'DM Mono',monospace;margin-bottom:12px;">Reset clears all scores and answers for testing. Does not clear team setup.</p>
       <div style="display:flex;gap:10px;flex-wrap:wrap;">
@@ -274,7 +293,7 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 16px
   </div>
   <div class="algo-section">
     <h2>Quiz Points</h2>
-    <table class="algo-table">
+    <div class="algo-table-wrap"><table class="algo-table">
       <thead><tr><th>Q</th><th>Theme</th><th>Correct</th><th>Wrong</th><th>Type</th></tr></thead>
       <tbody>
         <tr><td>1</td><td>AI Factory — 3-1-0 model</td><td>+40</td><td>−20</td><td>Multiple choice</td></tr>
@@ -283,7 +302,7 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 16px
         <tr><td>4</td><td>Scale/Scope/Learning — Transaction cost</td><td>+100</td><td>−50</td><td>Type-in</td></tr>
         <tr><td>5</td><td>Structural Differences — Yu'e Bao return</td><td>+60</td><td>−30</td><td>Multiple choice</td></tr>
       </tbody>
-    </table>
+    </table></div>
   </div>
   <div class="algo-section">
     <h2>Participation Points</h2>
@@ -291,7 +310,7 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 16px
   </div>
   <div class="algo-section">
     <h2>Social Profile Scoring</h2>
-    <table class="algo-table">
+    <div class="algo-table-wrap"><table class="algo-table">
       <thead><tr><th>Factor</th><th>Criteria</th><th>Points</th><th>Zhima Parallel</th></tr></thead>
       <tbody>
         <tr><td>Posted at all</td><td>Any submission found</td><td>+20</td><td>Identity verification</td></tr>
@@ -302,14 +321,14 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 16px
         <tr><td>Contact info</td><td>Email in post</td><td>+5</td><td>Trust signal</td></tr>
         <tr><td>No post</td><td>Nothing found</td><td>0</td><td>No data = no score</td></tr>
       </tbody>
-    </table>
+    </table></div>
   </div>
   <div class="algo-section">
     <h2>Individual Social Scores</h2>
-    <table class="algo-table">
+    <div class="algo-table-wrap"><table class="algo-table">
       <thead><tr><th>Name</th><th>Posted</th><th>Photo</th><th>Words</th><th>Required</th><th>Fun Facts</th><th>Contact</th><th>Score</th></tr></thead>
       <tbody id="social-breakdown-body"></tbody>
-    </table>
+    </table></div>
   </div>
 </div>
 
