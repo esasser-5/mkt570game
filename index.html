@@ -509,13 +509,13 @@ function renderQuizTeamView(){
   let h=`<div class="quiz-card"><div class="q-theme">Question ${q.id} of ${QUESTIONS.length} · ${q.theme}</div><div class="q-pts-badge">Correct: +${q.correct} pts · Wrong: ${q.wrong} pts</div><div class="q-text">${q.text}</div>`;
   if(ea){const cls=ea.correct?'correct':'wrong';h+=`<div class="submitted-msg ${cls}">${ea.correct?`✓ Correct! +${q.correct} points added to ${team.name}.`:`✗ Wrong. ${q.wrong} points. Correct answer: ${q.answer}`}</div>`;if(q.type==='mc')h+=renderMCOpts(q,ea.choiceIndex,true);}
   else if(ic){h+=`<div class="submitted-msg pending">⏱ Time's up — this question is now closed.</div>`;}
-  else if(q.type==='mc'){h+=`<div class="mc-options" id="mc-opts-${q.id}">`+q.options.map((o,i)=>`<div class="mc-option" id="mc-${q.id}-${i}" onclick="selMC(${q.id},${i})"><span class="mc-letter">${o.letter}</span>${o.text}</div>`).join('')+`</div><button class="btn btn-gold" id="mc-sub-${q.id}" onclick="subMC(${q.id})" disabled>提交 Submit Answer</button>`;}
-  else{h+=`<div class="text-input-wrap"><input class="answer-input" id="ans-${q.id}" placeholder="Type your answer here..." onkeydown="if(event.key==='Enter')subTxt(${q.id})"/></div><button class="btn btn-gold" onclick="subTxt(${q.id})">提交 Submit Answer</button>`;}
+  else if(q.type==='mc'){const si=selIdx[q.id];h+=`<div class="mc-options" id="mc-opts-${q.id}">`+q.options.map((o,i)=>`<div class="mc-option${si===i?' selected':''}" id="mc-${q.id}-${i}" onclick="selMC(${q.id},${i})"><span class="mc-letter">${o.letter}</span>${o.text}</div>`).join('')+`</div><button class="btn btn-gold" id="mc-sub-${q.id}" onclick="subMC(${q.id})"${si===undefined?' disabled':''}>提交 Submit Answer</button>`;}
+  else{h+=`<div class="text-input-wrap"><input class="answer-input" id="ans-${q.id}" value="${(selTxt[q.id]||'').replace(/"/g,'&quot;')}" placeholder="Type your answer here..." oninput="selTxt[${q.id}]=this.value" onkeydown="if(event.key==='Enter')subTxt(${q.id})"/></div><button class="btn btn-gold" onclick="subTxt(${q.id})">提交 Submit Answer</button>`;}
   h+=`</div>`;c.innerHTML=h+renderAnswersFeed(aq);}
 
 function renderMCOpts(q,si,dis){return`<div class="mc-options">`+q.options.map((o,i)=>{let c='mc-option disabled';if(i===q.correctIndex)c+=' correct';else if(i===si)c+=' wrong';return`<div class="${c}"><span class="mc-letter">${o.letter}</span>${o.text}</div>`;}).join('')+`</div>`;}
 
-const selIdx={};
+const selIdx={},selTxt={};
 function selMC(qid,idx){selIdx[qid]=idx;document.querySelectorAll(`#mc-opts-${qid} .mc-option`).forEach((e,i)=>e.classList.toggle('selected',i===idx));const b=document.getElementById(`mc-sub-${qid}`);if(b)b.disabled=false;}
 
 async function subMC(qid){
