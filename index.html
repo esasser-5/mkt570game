@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>芝麻信用 · Zhima Credit Score Game</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap');
+:root {
+  --yellow:#FFC107;--yellow-dark:#E6A800;--yellow-light:#FFD54F;
+  --blue-bg:#0D2B5E;--blue-mid:#1565C0;--blue-card:#0A2347;--blue-surface:#112D66;
+  --red:#E53935;--red-light:#EF5350;
+  --green:#43A047;--green-light:#66BB6A;
+  --white:#FFFFFF;--white-70:rgba(255,255,255,0.7);--white-40:rgba(255,255,255,0.4);--white-15:rgba(255,255,255,0.15);--white-08:rgba(255,255,255,0.08);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--blue-bg);color:var(--white);font-family:'Inter',sans-serif;min-height:100vh;
+  background-image:radial-gradient(ellipse at 20% 50%,rgba(21,101,192,0.3) 0%,transparent 60%),radial-gradient(ellipse at 80% 20%,rgba(255,193,7,0.08) 0%,transparent 50%);}
+nav{display:flex;align-items:center;justify-content:space-between;padding:0 16px;height:48px;
+  border-bottom:3px solid var(--yellow);background:var(--blue-card);position:sticky;top:0;z-index:100;flex-wrap:nowrap;}
+.nav-brand{display:flex;align-items:center;gap:10px;flex-shrink:0;}
+.nav-char{font-family:'Noto Serif SC',serif;font-size:18px;color:var(--yellow);line-height:1;white-space:nowrap;}
+.nav-title{font-size:9px;letter-spacing:0.14em;color:var(--yellow-light);text-transform:uppercase;font-weight:600;white-space:nowrap;}
+.nav-tabs{display:flex;gap:0;flex-wrap:nowrap;overflow-x:auto;}
+.nav-tab{padding:0 12px;background:transparent;border:none;border-bottom:3px solid transparent;color:var(--white-70);
+  font-family:'Inter',sans-serif;font-size:10px;letter-spacing:0.04em;cursor:pointer;height:48px;
+  text-transform:uppercase;font-weight:600;transition:all 0.2s;white-space:nowrap;flex-shrink:0;}
+.nav-tab:hover{color:var(--yellow-light);border-bottom-color:rgba(255,193,7,0.4);}
+.nav-tab.active{color:var(--yellow);border-bottom-color:var(--yellow);}
+.sync-dot{width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-left:10px;transition:background 0.3s;}
+.sync-dot.ok{background:var(--green-light);box-shadow:0 0 6px var(--green-light);}
+.sync-dot.err{background:var(--red);box-shadow:0 0 6px var(--red);}
+.team-subnav{display:none;padding:8px 20px;background:var(--blue-surface);border-bottom:1px solid var(--white-15);flex-wrap:wrap;gap:6px;}
+.team-subnav.visible{display:flex;}
+.team-tab{padding:5px 16px;background:var(--white-08);border:1px solid var(--white-15);color:var(--white-40);
+  font-family:'Inter',sans-serif;font-size:11px;font-weight:600;cursor:pointer;border-radius:20px;transition:all 0.2s;}
+.team-tab:hover{border-color:var(--yellow);color:var(--yellow-light);}
+.team-tab.active{background:var(--yellow);border-color:var(--yellow);color:var(--blue-bg);}
+.view{display:none;padding:28px 20px;max-width:1100px;margin:0 auto;}
+.view.active{display:block;}
+.sb-header{text-align:center;margin-bottom:32px;}
+.sb-header h1{font-family:'Noto Serif SC',serif;font-size:42px;color:var(--yellow);margin-bottom:4px;}
+.sb-header p{font-size:12px;color:var(--white-40);letter-spacing:0.12em;text-transform:uppercase;font-weight:600;}
+.teams-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;}
+.team-card{background:var(--blue-card);border:1px solid var(--white-15);border-radius:12px;padding:20px;position:relative;overflow:hidden;transition:transform 0.2s,border-color 0.2s;}
+.team-card:hover{transform:translateY(-2px);border-color:rgba(255,193,7,0.4);}
+.team-card::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;background:var(--yellow);}
+.team-name-label{font-size:16px;font-weight:700;color:var(--white);margin-bottom:3px;}
+.team-members-label{font-size:11px;color:var(--white-40);margin-bottom:16px;line-height:1.5;}
+.score-display{display:flex;align-items:baseline;gap:8px;margin-bottom:12px;}
+.score-number{font-family:'Noto Serif SC',serif;font-size:44px;color:var(--yellow);font-weight:700;line-height:1;}
+.score-label{font-size:9px;color:var(--white-40);text-transform:uppercase;letter-spacing:0.12em;font-weight:600;}
+.score-bar-bg{height:8px;background:var(--white-08);border-radius:4px;overflow:hidden;margin-bottom:10px;}
+.score-bar{height:100%;background:linear-gradient(90deg,var(--yellow-dark),var(--yellow),var(--yellow-light));border-radius:4px;transition:width 0.8s cubic-bezier(0.4,0,0.2,1);}
+.score-breakdown{display:flex;gap:12px;font-size:10px;font-weight:600;color:var(--white-40);}
+.score-breakdown span{color:var(--yellow-light);}
+.q-banner{padding:14px 18px;border-radius:8px;font-size:12px;font-weight:600;margin-bottom:20px;text-align:center;letter-spacing:0.04em;}
+.q-banner.waiting{background:var(--white-08);border:1px solid var(--white-15);color:var(--white-40);}
+.quiz-card{background:var(--blue-card);border:1px solid var(--white-15);border-radius:12px;padding:28px;max-width:680px;margin:0 auto;}
+.q-theme{font-size:10px;font-weight:700;color:var(--yellow);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:8px;}
+.q-text{font-size:19px;line-height:1.55;color:var(--white);margin-bottom:20px;font-weight:500;}
+.q-pts-badge{display:inline-block;padding:4px 12px;background:rgba(255,193,7,0.15);border:1px solid rgba(255,193,7,0.4);border-radius:20px;font-size:10px;font-weight:700;color:var(--yellow);margin-bottom:16px;}
+.mc-options{display:flex;flex-direction:column;gap:10px;margin-bottom:20px;}
+.mc-option{padding:13px 16px;background:var(--blue-surface);border:2px solid var(--white-15);border-radius:8px;cursor:pointer;transition:all 0.2s;font-size:15px;color:var(--white);display:flex;gap:14px;align-items:center;font-weight:500;}
+.mc-option:hover{border-color:var(--yellow);background:rgba(255,193,7,0.08);}
+.mc-option.selected{border-color:var(--yellow);background:rgba(255,193,7,0.12);}
+.mc-option.correct{border-color:var(--green-light);background:rgba(67,160,71,0.15);color:#A5D6A7;}
+.mc-option.wrong{border-color:var(--red);background:rgba(229,57,53,0.15);color:#EF9A9A;}
+.mc-option.disabled{cursor:default;pointer-events:none;}
+.mc-letter{font-size:11px;font-weight:800;color:var(--yellow);min-width:20px;background:rgba(255,193,7,0.15);padding:2px 6px;border-radius:4px;text-align:center;}
+.text-input-wrap{margin-bottom:16px;}
+.answer-input{width:100%;padding:13px 16px;background:var(--blue-surface);border:2px solid var(--white-15);border-radius:8px;color:var(--white);font-family:'Inter',sans-serif;font-size:16px;font-weight:500;outline:none;transition:border-color 0.2s;}
+.answer-input:focus{border-color:var(--yellow);}
+.answer-input::placeholder{color:var(--white-40);}
+.submitted-msg{padding:13px 16px;border-radius:8px;font-size:12px;font-weight:600;margin-bottom:14px;}
+.submitted-msg.correct{background:rgba(67,160,71,0.15);border:2px solid var(--green);color:#A5D6A7;}
+.submitted-msg.wrong{background:rgba(229,57,53,0.15);border:2px solid var(--red);color:#EF9A9A;}
+.submitted-msg.pending{background:var(--white-08);border:2px solid var(--white-15);color:var(--white-40);}
+.answers-feed{margin-top:28px;}
+.answers-feed h3{font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--white-40);margin-bottom:10px;}
+.answer-row{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--white-08);border:1px solid var(--white-15);border-radius:6px;margin-bottom:5px;font-size:12px;}
+.answer-row .team-lbl{color:var(--white);font-weight:600;}
+.answer-row .ans-val{color:var(--white-40);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.answer-row .ans-result{font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;}
+.ans-result.c{background:rgba(67,160,71,0.2);color:#A5D6A7;}
+.ans-result.w{background:rgba(229,57,53,0.2);color:#EF9A9A;}
+.ans-result.p{color:var(--white-40);}
+.setup-section{background:var(--blue-card);border:1px solid var(--white-15);border-radius:12px;padding:22px;margin-bottom:20px;}
+.setup-section h2{font-size:18px;font-weight:700;color:var(--yellow);margin-bottom:14px;}
+.teams-setup-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px;}
+.team-slot{background:var(--blue-surface);border:1px solid var(--white-15);border-radius:10px;padding:14px;min-height:130px;}
+.team-slot-header{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+.team-name-input{flex:1;padding:6px 10px;background:var(--blue-bg);border:1px solid var(--white-15);border-radius:6px;color:var(--yellow);font-family:'Inter',sans-serif;font-size:12px;font-weight:600;outline:none;}
+.team-name-input:focus{border-color:var(--yellow);}
+.team-slot-count{font-size:10px;font-weight:700;color:var(--white-40);}
+.roster-pool{display:flex;flex-wrap:wrap;gap:7px;min-height:50px;padding:10px;background:var(--white-08);border:1px dashed var(--white-15);border-radius:8px;margin-bottom:14px;}
+.name-chip{padding:4px 12px;background:var(--blue-surface);border:1px solid var(--white-15);border-radius:20px;font-size:12px;font-weight:500;color:var(--white);cursor:grab;user-select:none;transition:all 0.15s;white-space:nowrap;}
+.name-chip:hover{background:rgba(255,193,7,0.15);border-color:var(--yellow);color:var(--yellow);}
+.name-chip.dragging{opacity:0.35;}
+.team-drop-zone{min-height:70px;display:flex;flex-wrap:wrap;gap:5px;padding:6px;border:1px dashed transparent;border-radius:6px;transition:all 0.2s;}
+.team-drop-zone.drag-over{border-color:var(--yellow);background:rgba(255,193,7,0.06);}
+.fac-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+@media(max-width:650px){.fac-grid{grid-template-columns:1fr;}}
+.fac-card{background:var(--blue-card);border:1px solid var(--white-15);border-radius:12px;padding:20px;}
+.fac-card h3{font-size:15px;font-weight:700;color:var(--yellow);margin-bottom:14px;}
+.fac-row{display:flex;gap:8px;align-items:center;margin-bottom:10px;}
+.fac-row select,.fac-row input{flex:1;padding:8px 11px;background:var(--blue-surface);border:1px solid var(--white-15);border-radius:6px;color:var(--white);font-family:'Inter',sans-serif;font-size:12px;outline:none;}
+.fac-row select option{background:var(--blue-bg);}
+.log-list{max-height:180px;overflow-y:auto;font-size:11px;color:var(--white-40);line-height:1.8;}
+.log-entry.pos{color:#A5D6A7;}.log-entry.neg{color:#EF9A9A;}.log-entry.neutral{color:var(--yellow-light);}
+.q-status-list{display:flex;flex-direction:column;gap:6px;}
+.q-status-row{display:flex;align-items:center;justify-content:space-between;padding:7px 12px;background:var(--white-08);border:1px solid var(--white-15);border-radius:6px;font-size:11px;font-weight:500;}
+.q-status-row .q-lbl{color:var(--white);}
+.q-badge{padding:2px 10px;border-radius:20px;font-size:10px;font-weight:700;}
+.q-badge.open{background:rgba(229,57,53,0.2);color:#EF9A9A;border:1px solid var(--red);}
+.q-badge.closed{background:rgba(67,160,71,0.15);color:#A5D6A7;border:1px solid var(--green);}
+.q-badge.upcoming{background:var(--white-08);color:var(--white-40);border:1px solid var(--white-15);}
+.algo-section{background:var(--blue-card);border:1px solid var(--white-15);border-radius:12px;padding:22px;margin-bottom:18px;}
+.algo-section h2{font-size:18px;font-weight:700;color:var(--yellow);margin-bottom:10px;}
+.algo-section p{font-size:14px;line-height:1.7;color:var(--white-70);margin-bottom:7px;}
+.algo-table{width:100%;border-collapse:collapse;margin-top:10px;font-size:12px;}
+.algo-table th{padding:8px 10px;background:rgba(255,193,7,0.12);border:1px solid rgba(255,193,7,0.2);font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--yellow);text-align:left;}
+.algo-table td{padding:7px 10px;border:1px solid var(--white-08);font-size:11px;color:var(--white-70);}
+.algo-table tr:hover td{background:var(--white-08);}
+.btn{padding:9px 20px;border:none;border-radius:6px;font-family:'Inter',sans-serif;font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;transition:all 0.2s;}
+.btn-gold{background:var(--yellow);color:var(--blue-bg);}
+.btn-gold:hover{background:var(--yellow-light);}
+.btn-gold:disabled{opacity:0.4;cursor:not-allowed;}
+.btn-outline{background:transparent;border:2px solid var(--white-15);color:var(--white-70);}
+.btn-outline:hover{border-color:var(--yellow);color:var(--yellow);}
+.btn-red{background:var(--red);color:white;}
+.btn-red:hover{background:var(--red-light);}
+.btn-jade{background:var(--green);color:white;}
+.btn-jade:hover{background:var(--green-light);}
+.btn-sm{padding:5px 12px;font-size:10px;}
+#toast{position:fixed;bottom:24px;right:24px;padding:12px 20px;background:var(--yellow);color:var(--blue-bg);font-family:'Inter',sans-serif;font-size:12px;font-weight:700;border-radius:8px;transform:translateY(70px);opacity:0;transition:all 0.3s;z-index:999;max-width:300px;}
+#toast.show{transform:translateY(0);opacity:1;}
+#toast.err{background:var(--red);color:white;}
+</style>
+</head>
+<body>
+<nav>
+  <div class="nav-brand">
+    <div class="nav-char">芝麻信用</div>
+    <div><div class="nav-title">Zhima Credit</div></div>
+  </div>
+  <div style="display:flex;align-items:center;gap:6px;">
+    <div class="nav-tabs">
+      <button class="nav-tab active" onclick="showMain('scoreboard',this)">排行榜 Scores</button>
+      <button class="nav-tab" onclick="showMain('quiz',this)">问答 Quiz</button>
+      <button class="nav-tab" onclick="showMain('setup',this)">设置 Setup</button>
+      <button class="nav-tab" onclick="showMain('facilitator',this)">主持 Facilitator</button>
+      <button class="nav-tab" onclick="showMain('algorithm',this)">算法 Algorithm</button>
+    </div>
+    <div class="sync-dot" id="sync-dot" title="Sync status"></div>
+  </div>
+</nav>
+<div class="team-subnav" id="team-subnav"></div>
+
+<div class="view active" id="view-scoreboard">
+  <div class="sb-header">
+    <h1>芝麻信用分</h1>
+    <p>Zhima Credit Score · Ant Financial Case</p>
+  </div>
+  <div style="max-width:820px;margin:0 auto 28px;">
+    <button onclick="toggleInstructions()" id="instr-btn" style="display:flex;align-items:center;justify-content:space-between;width:100%;background:var(--blue-card);border:1px solid var(--white-15);border-radius:12px;padding:13px 20px;cursor:pointer;">
+      <span style="font-family:'Noto Serif SC',serif;font-size:15px;color:var(--yellow);font-weight:700;">开始说明 · Getting Started</span>
+      <span id="instr-chevron" style="color:var(--yellow);font-size:13px;transition:transform 0.3s;display:inline-block;">▼</span>
+    </button>
+    <div id="instr-body" style="display:none;background:var(--blue-card);border:1px solid var(--white-15);border-top:none;border-radius:0 0 12px 12px;padding:20px 24px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+        <div>
+          <div style="font-size:10px;letter-spacing:0.12em;color:var(--yellow);text-transform:uppercase;margin-bottom:8px;font-weight:700;">Step 1 · Designate one person</div>
+          <div style="font-size:14px;line-height:1.6;color:var(--white-70);">One person per team opens this app and selects your team from the <strong style="color:var(--yellow);">问答 Quiz</strong> tab. Only one device per team. Multiple devices on the same team may cause conflicts.</div>
+        </div>
+        <div>
+          <div style="font-size:10px;letter-spacing:0.12em;color:var(--yellow);text-transform:uppercase;margin-bottom:8px;font-weight:700;">Step 2 · Find your team</div>
+          <div style="font-size:14px;line-height:1.6;color:var(--white-70);">Your team has already been assigned. Click <strong style="color:var(--yellow);">问答 Quiz</strong> above, then select your team tab. You will only see the active question — released one at a time.</div>
+        </div>
+        <div>
+          <div style="font-size:10px;letter-spacing:0.12em;color:var(--yellow);text-transform:uppercase;margin-bottom:8px;font-weight:700;">Step 3 · Answer questions</div>
+          <div style="font-size:14px;line-height:1.6;color:var(--white-70);">All teams answer simultaneously. Select or type your answer and hit <strong style="color:var(--yellow);">提交 Submit</strong>. Correct = points added. Wrong = points deducted. Cannot change once submitted.</div>
+        </div>
+        <div>
+          <div style="font-size:10px;letter-spacing:0.12em;color:var(--yellow);text-transform:uppercase;margin-bottom:8px;font-weight:700;">Step 4 · Earn participation points</div>
+          <div style="font-size:14px;line-height:1.6;color:var(--white-70);">Facilitators award bonus points for strong contributions to discussion. A surprise bonus will be revealed at the end.</div>
+        </div>
+      </div>
+      <div style="padding-top:12px;border-top:1px solid var(--white-15);font-size:11px;color:var(--white-40);font-weight:600;">
+        ⚠ Keep this page open during class. Scores update in real time. Max 1 device per team on the Quiz tab.
+      </div>
+    </div>
+  </div>
+  <div id="scoreboard-grid" class="teams-grid"></div>
+</div>
+
+<div class="view" id="view-quiz">
+  <div id="quiz-team-content">
+    <div style="text-align:center;padding:60px 20px;color:rgba(245,237,216,0.4);font-family:'DM Mono',monospace;font-size:13px;">Select your team from the tab above to begin.</div>
+  </div>
+</div>
+
+<div class="view" id="view-setup">
+  <div class="setup-section">
+    <h2>人员配置 · Team Setup</h2>
+    <p style="font-size:13px;color:rgba(245,237,216,0.45);font-family:'DM Mono',monospace;margin-bottom:12px;">
+      Edit team names below. Drag names from the pool into teams. Double-click a name in a team slot to return it to the pool.
+    </p>
+    <div class="roster-pool" id="roster-pool"></div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <button class="btn btn-gold" onclick="saveSetup()">确认 Save & Lock Teams</button>
+      <button class="btn btn-outline" onclick="loadSetupFromState()">↺ Reload from Server</button>
+    </div>
+  </div>
+  <div class="teams-setup-grid" id="teams-setup-grid"></div>
+</div>
+
+<div class="view" id="view-facilitator">
+  <h2 style="font-family:'Noto Serif SC',serif;color:var(--gold);margin-bottom:22px;font-size:26px;">主持面板 · Facilitator Panel</h2>
+  <div class="fac-grid">
+    <div class="fac-card">
+      <h3>📋 Question Control</h3>
+      <p style="font-size:13px;color:rgba(245,237,216,0.5);font-family:'DM Mono',monospace;margin-bottom:12px;">Current active question: <span id="fac-active-q" style="color:var(--gold-light);">None</span></p>
+      <div class="q-status-list" id="q-status-list"></div>
+      <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
+        <button class="btn btn-gold" onclick="nextQuestion()">▶ Next Question</button>
+        <button class="btn btn-outline" onclick="closeCurrentQuestion()">■ Close Question</button>
+      </div>
+    </div>
+    <div class="fac-card">
+      <h3>＋ Participation Points</h3>
+      <div class="fac-row"><select id="fac-part-team"></select></div>
+      <div class="fac-row"><input type="text" id="fac-part-note" placeholder="Note (optional)" /></div>
+      <button class="btn btn-jade" onclick="addParticipation()">Grant +50 Participation</button>
+    </div>
+    <div class="fac-card">
+      <h3>± Manual Adjustment</h3>
+      <div class="fac-row">
+        <select id="fac-adj-team"></select>
+        <input type="number" id="fac-adj-pts" placeholder="pts" style="max-width:70px;" />
+      </div>
+      <div class="fac-row"><input type="text" id="fac-adj-note" placeholder="Reason" /></div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-jade btn-sm" onclick="manualAdj(1)">+ Add</button>
+        <button class="btn btn-red btn-sm" onclick="manualAdj(-1)">− Subtract</button>
+      </div>
+    </div>
+    <div class="fac-card">
+      <h3>🌸 Social Score (Surprise)</h3>
+      <p style="font-size:13px;color:rgba(245,237,216,0.5);font-family:'DM Mono',monospace;margin-bottom:12px;">Apply discussion board social scores as a one-time bonus. Do this at the end as a reveal!</p>
+      <button class="btn btn-gold" onclick="applySocial()">Apply 社会分 Social Baseline</button>
+      <p id="social-status" style="font-size:11px;color:#7DEBA8;font-family:'DM Mono',monospace;margin-top:8px;display:none;">✓ Social scores applied.</p>
+    </div>
+    <div class="fac-card" style="grid-column:span 2;">
+      <h3>📜 Activity Log</h3>
+      <div class="log-list" id="activity-log"><div style="color:rgba(245,237,216,0.2);">No activity yet.</div></div>
+    </div>
+    <div class="fac-card" style="grid-column:span 2;border-color:var(--red);">
+      <h3 style="color:var(--red-light);">⚠ Danger Zone</h3>
+      <p style="font-size:13px;color:rgba(245,237,216,0.5);font-family:'DM Mono',monospace;margin-bottom:12px;">Reset clears all scores and answers for testing. Does not clear team setup.</p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <button class="btn btn-red" onclick="resetScores()">Reset All Scores & Answers</button>
+        <button class="btn btn-red" onclick="fullReset()">Full Reset (incl. teams)</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="view" id="view-algorithm">
+  <h2 style="font-family:'Noto Serif SC',serif;color:var(--gold);margin-bottom:22px;font-size:26px;">算法说明 · How the Scoring Works</h2>
+  <div class="algo-section">
+    <h2>Score Range</h2>
+    <p>All teams start at <strong>350</strong> — the floor of the Zhima Credit scale. The maximum possible score is <strong>900</strong>, matching Ant Financial's real scoring range.</p>
+  </div>
+  <div class="algo-section">
+    <h2>Quiz Points</h2>
+    <table class="algo-table">
+      <thead><tr><th>Q</th><th>Theme</th><th>Correct</th><th>Wrong</th><th>Type</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>AI Factory — 3-1-0 model</td><td>+40</td><td>−20</td><td>Multiple choice</td></tr>
+        <tr><td>2</td><td>SCM/CRM/NPD — Scenario engagement</td><td>+80</td><td>−40</td><td>Type-in</td></tr>
+        <tr><td>3</td><td>AI Use Cases — Fraud detection speed</td><td>+60</td><td>−30</td><td>Multiple choice</td></tr>
+        <tr><td>4</td><td>Scale/Scope/Learning — Transaction cost</td><td>+100</td><td>−50</td><td>Type-in</td></tr>
+        <tr><td>5</td><td>Structural Differences — Yu'e Bao return</td><td>+60</td><td>−30</td><td>Multiple choice</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="algo-section">
+    <h2>Participation Points</h2>
+    <p>Facilitators grant +50 points per participation contribution. No cap.</p>
+  </div>
+  <div class="algo-section">
+    <h2>Social Profile Scoring</h2>
+    <table class="algo-table">
+      <thead><tr><th>Factor</th><th>Criteria</th><th>Points</th><th>Zhima Parallel</th></tr></thead>
+      <tbody>
+        <tr><td>Posted at all</td><td>Any submission found</td><td>+20</td><td>Identity verification</td></tr>
+        <tr><td>Photo attached</td><td>Image in post or classlist profile</td><td>+30</td><td>Identity characteristics</td></tr>
+        <tr><td>Word count</td><td>&lt;50: 0 | 50–100: +5 | 100–200: +15 | 200+: +25</td><td>0–25</td><td>Behavioral depth</td></tr>
+        <tr><td>All 3 required fields</td><td>Name + undergrad + work experience</td><td>+15</td><td>Fulfillment capacity</td></tr>
+        <tr><td>Fun facts</td><td>2+ personal facts beyond required</td><td>+10</td><td>Social connection</td></tr>
+        <tr><td>Contact info</td><td>Email in post</td><td>+5</td><td>Trust signal</td></tr>
+        <tr><td>No post</td><td>Nothing found</td><td>0</td><td>No data = no score</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="algo-section">
+    <h2>Individual Social Scores</h2>
+    <table class="algo-table">
+      <thead><tr><th>Name</th><th>Posted</th><th>Photo</th><th>Words</th><th>Required</th><th>Fun Facts</th><th>Contact</th><th>Score</th></tr></thead>
+      <tbody id="social-breakdown-body"></tbody>
+    </table>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script>
+// --- Firebase Setup ---
+const firebaseConfig = {
+  apiKey: "AIzaSyCJnSWA-PzaUaWfEWKPjKGAPGsP2SMWAqE",
+  authDomain: "mkt-570-game.firebaseapp.com",
+  databaseURL: "https://mkt-570-game-default-rtdb.firebaseio.com",
+  projectId: "mkt-570-game",
+  storageBucket: "mkt-570-game.firebasestorage.app",
+  messagingSenderId: "536417977842",
+  appId: "1:536417977842:web:bc1e942fb839d434d1176b"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+const gameRef = db.ref('zhima_game_state_v2');
+db.ref('.info/connected').on('value',(snap)=>{ setSyncDot(snap.val()===true); });
+
+const BASE_SCORE=350;
+const QUESTIONS=[
+  {id:1,theme:'AI Factory',type:'mc',
+   text:"Ant Financial's 3-1-0 loan model stands for 3 minutes to apply, 1 minute for approval, and 0 of what?",
+   options:[{letter:'A',text:'0 interest for the first month'},{letter:'B',text:'0 human involvement in the process'},{letter:'C',text:'0 documents required from the applicant'},{letter:'D',text:'0 rejections for first-time borrowers'}],
+   correctIndex:1,answer:'B — 0 human involvement in the process',correct:40,wrong:-20},
+  {id:2,theme:'SCM / CRM / NPD',type:'text',
+   text:'By 2015, what percentage of Alipay users were engaged in 4 or more active scenarios — a key indicator of how data breadth drives CRM depth?',
+   keywords:['40'],answer:'40%',correct:80,wrong:-40},
+  {id:3,theme:'AI Use Cases',type:'mc',
+   text:"Ant Financial's fraud detection system assesses risk on every transaction. How quickly does it reach a decision?",
+   options:[{letter:'A',text:'5 seconds — fast enough for most retail transactions'},{letter:'B',text:'0.1 seconds — within a single blink of an eye'},{letter:'C',text:'1 minute — comparable to a chip-and-pin card check'},{letter:'D',text:'30 seconds — using a tiered risk review process'}],
+   correctIndex:1,answer:'B — 0.1 seconds',correct:60,wrong:-30},
+  {id:4,theme:'Scale / Scope / Learning',type:'text',
+   text:"What is Ant Financial's IT cost per transaction? (Enter the number)",
+   keywords:['0.1'],answer:'RMB 0.1',correct:100,wrong:-50},
+  {id:5,theme:'Structural Differences',type:'mc',
+   text:"Yu'e Bao, Ant Financial's money market fund, offered savers approximately what annual return — compared to around 2.75% at traditional Chinese banks?",
+   options:[{letter:'A',text:'1%'},{letter:'B',text:'3.5%'},{letter:'C',text:'5%'},{letter:'D',text:'8%'}],
+   correctIndex:2,answer:'C — 5%',correct:60,wrong:-30}
+];
+
+const SOCIAL_RAW={
+  'Imisioluwa Grace Adenuga':{posted:true,photo:false,words:25,req:true,fun:true,contact:false},
+  'Chinmay Bharadwaj':{posted:false,photo:false,words:0,req:false,fun:false,contact:false},
+  'Shamia Charles':{posted:true,photo:false,words:15,req:true,fun:true,contact:false},
+  'Jiya Chaudhary':{posted:true,photo:false,words:25,req:true,fun:true,contact:false},
+  'Vincent Cracchiolo':{posted:true,photo:false,words:5,req:true,fun:true,contact:false},
+  'Safa Farooq':{posted:true,photo:true,words:25,req:true,fun:true,contact:false},
+  'Rocio Garcia Perez':{posted:true,photo:true,words:25,req:true,fun:true,contact:false},
+  'Nida Hussain':{posted:true,photo:false,words:15,req:true,fun:true,contact:false},
+  'Michael Jang':{posted:false,photo:false,words:0,req:false,fun:false,contact:false},
+  'Mriga Khera':{posted:true,photo:false,words:25,req:true,fun:true,contact:true},
+  'Collin Lane':{posted:true,photo:false,words:25,req:true,fun:true,contact:false},
+  'Haiming Liu':{posted:true,photo:false,words:15,req:true,fun:true,contact:true},
+  'Harshita Makan':{posted:false,photo:false,words:0,req:false,fun:false,contact:false},
+  'Yajayra Marcos':{posted:true,photo:false,words:15,req:true,fun:true,contact:false},
+  'Sreekar Mundla':{posted:true,photo:false,words:25,req:true,fun:true,contact:false},
+  'Boris Patarov':{posted:true,photo:true,words:25,req:true,fun:true,contact:false},
+  'Alexandra Paset':{posted:true,photo:false,words:25,req:true,fun:true,contact:true},
+  'Jiya Patel':{posted:true,photo:false,words:15,req:false,fun:true,contact:false},
+  'Eaint Phyu':{posted:true,photo:true,words:5,req:false,fun:false,contact:false},
+  'Francesco Roda':{posted:true,photo:false,words:15,req:true,fun:true,contact:false},
+  'Patricia Rodriguez':{posted:true,photo:true,words:5,req:false,fun:false,contact:false},
+  'Helly Shah':{posted:false,photo:false,words:0,req:false,fun:false,contact:false},
+  'Kristina Shevchenko':{posted:false,photo:false,words:0,req:false,fun:false,contact:false},
+  'Anirudh Siddheswaran':{posted:true,photo:true,words:15,req:true,fun:true,contact:false},
+  'Viktoriia Stefaniv':{posted:true,photo:true,words:25,req:true,fun:true,contact:false},
+  'Shikha Thakkar':{posted:true,photo:true,words:25,req:true,fun:true,contact:true},
+  'Akshat Vaidya':{posted:true,photo:false,words:15,req:true,fun:false,contact:false},
+  'Lokeshwar Vijayasankar':{posted:true,photo:false,words:25,req:true,fun:true,contact:false},
+  'Anushmita Sikari':{posted:true,photo:false,words:15,req:true,fun:true,contact:false},
+  'Crissely Cervantes':{posted:true,photo:false,words:15,req:true,fun:true,contact:true},
+  'Amina Puskar':{posted:true,photo:false,words:15,req:true,fun:true,contact:false},
+  'Student 29':{posted:false,photo:false,words:0,req:false,fun:false,contact:false},
+  'Student 30':{posted:false,photo:false,words:0,req:false,fun:false,contact:false},
+  'Student 31':{posted:false,photo:false,words:0,req:false,fun:false,contact:false},
+  'Student 32':{posted:false,photo:false,words:0,req:false,fun:false,contact:false},
+};
+const ALL_STUDENTS=Object.keys(SOCIAL_RAW);
+const UNASSIGNED_POOL=['Eaint Phyu','Amina Puskar','Anushmita Sikari','Crissely Cervantes','Student A','Student B','Student C'];
+
+function calcSocial(name){const d=SOCIAL_RAW[name];if(!d||!d.posted)return 0;let s=20;if(d.photo)s+=30;s+=d.words;if(d.req)s+=15;if(d.fun)s+=10;if(d.contact)s+=5;return s;}
+
+let state={teams:[
+  {id:1,name:'Facilitators',members:['Emily Sasser','Meetul Panchal','Constance Sarantos','Hassan Osaid','Zainab Siddique'],quizPts:0,partPts:0,socialPts:0,isFacilitator:true},
+  {id:2,name:'Team 2',members:['Sreekar Mundla','Boris Patarov','Anirudh Siddheswaran','Shikha Thakkar','Akshat Vaidya'],quizPts:0,partPts:0,socialPts:0},
+  {id:3,name:'Team 3',members:['Imisioluwa Grace Adenuga','Shamia Charles','Nida Hussain','Haiming Liu','Francesco Roda'],quizPts:0,partPts:0,socialPts:0},
+  {id:4,name:'Team 4',members:['Jiya Chaudhary','Mriga Khera','Collin Lane','Jiya Patel'],quizPts:0,partPts:0,socialPts:0},
+  {id:5,name:'Team 5',members:['Chinmay Bharadwaj','Alexandra Paset','Patricia Rodriguez','Helly Shah','Viktoriia Stefaniv'],quizPts:0,partPts:0,socialPts:0},
+  {id:6,name:'Team 6',members:['Rocio Garcia Perez','Michael Jang','Yajayra Marcos','Kristina Shevchenko'],quizPts:0,partPts:0,socialPts:0},
+  {id:7,name:'Team 7',members:['Vincent Cracchiolo','Safa Farooq','Harshita Makan','Lokeshwar Vijayasankar'],quizPts:0,partPts:0,socialPts:0},
+],activeQuestion:null,closedQuestions:[],answers:{},log:[],socialApplied:false,version:0};
+let activeTeamId=null,lastVersion=-1,currentMain='scoreboard';
+
+// --- Firebase helpers ---
+function normalizeState(s){
+  if(!s)return s;
+  if(!Array.isArray(s.closedQuestions))s.closedQuestions=s.closedQuestions?Object.values(s.closedQuestions):[];
+  if(!Array.isArray(s.log))s.log=s.log?Object.values(s.log):[];
+  if(!s.answers)s.answers={};
+  if(s.teams){
+    if(!Array.isArray(s.teams))s.teams=Object.values(s.teams);
+    s.teams.forEach(t=>{if(!Array.isArray(t.members))t.members=t.members?Object.values(t.members):[];});
+  }
+  return s;
+}
+
+async function saveState(){
+  state.version=(state.version||0)+1;
+  lastVersion=state.version;
+  try{ await gameRef.set(state); return true; }
+  catch(e){ console.error('saveState failed:',e); return false; }
+}
+
+async function loadState(){
+  try{
+    const snap=await gameRef.once('value');
+    if(snap.exists()){
+      const l=normalizeState(snap.val());
+      if(!state.version||l.version>state.version){
+        state=l; lastVersion=l.version; render();
+      }
+    }
+  }catch(e){console.error('loadState failed:',e);}
+}
+
+function startSync(){
+  gameRef.on('value',(snap)=>{
+    if(!snap.exists())return;
+    const remote=normalizeState(snap.val());
+    if(remote.version!==lastVersion){
+      lastVersion=remote.version;
+      state=remote;
+      render();
+    }
+  },(err)=>{ console.error('Firebase sync error:',err); });
+}
+
+function setSyncDot(ok){document.getElementById('sync-dot').className='sync-dot '+(ok?'ok':'err');}
+
+function showMain(name,btn){currentMain=name;document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));document.getElementById('view-'+name).classList.add('active');if(btn)btn.classList.add('active');document.getElementById('team-subnav').classList.toggle('visible',name==='quiz');render();}
+
+function renderSubnav(){document.getElementById('team-subnav').innerHTML=state.teams.filter(t=>!t.isFacilitator).map(t=>`<button class="team-tab ${activeTeamId===t.id?'active':''}" onclick="selectTeam(${t.id})">${t.name}</button>`).join('');}
+function selectTeam(id){activeTeamId=id;renderSubnav();renderQuizTeamView();}
+
+function totalScore(t){if(t.isFacilitator)return 0;return Math.min(900,BASE_SCORE+t.quizPts+t.partPts+t.socialPts);}
+
+function renderScoreboard(){
+  const playing=state.teams.filter(t=>!t.isFacilitator).sort((a,b)=>a.id-b.id);
+  const fac=state.teams.find(t=>t.isFacilitator);
+  const teamCards=playing.map(t=>{
+    const s=totalScore(t),pct=Math.round(5+((s-350)/(900-350))*95);
+    return `<div class="team-card"><div class="team-name-label">${t.name}</div><div class="team-members-label">${t.members.length?t.members.join(' · '):'No members assigned'}</div><div class="score-display"><div class="score-number">${s}</div><div class="score-label">信用分<br>credit pts</div></div><div class="score-bar-bg"><div class="score-bar" style="width:${Math.max(pct,2)}%"></div></div><div class="score-breakdown"><div>社会 <span>${t.socialPts}</span></div><div>问答 <span>${t.quizPts}</span></div><div>参与 <span>${t.partPts}</span></div></div></div>`;
+  }).join('');
+  const facCard=fac?`<div style="grid-column:1/-1;margin-top:12px;"><div style="background:var(--blue-surface);border:1px dashed var(--white-15);border-radius:12px;padding:14px 20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;"><span style="font-size:10px;font-weight:700;color:var(--white-40);text-transform:uppercase;letter-spacing:0.1em;">🎮 Facilitators</span><span style="font-size:13px;color:var(--white-40);">${fac.members.join(' · ')}</span></div></div>`:'';
+  document.getElementById('scoreboard-grid').innerHTML=teamCards+facCard;}
+
+function renderQuizTeamView(){
+  const c=document.getElementById('quiz-team-content');
+  if(!activeTeamId){c.innerHTML=`<div style="text-align:center;padding:60px 20px;color:rgba(245,237,216,0.4);font-family:'DM Mono',monospace;font-size:13px;">Select your team from the tab above to begin.</div>`;return;}
+  const team=state.teams.find(t=>t.id===activeTeamId),aq=state.activeQuestion;
+  if(!aq){c.innerHTML=`<div class="quiz-card"><div class="q-banner waiting">⏳ Waiting for facilitator to open a question...</div><div style="text-align:center;font-family:'DM Mono',monospace;font-size:12px;color:rgba(245,237,216,0.3);margin-top:20px;">${state.closedQuestions.length} of ${QUESTIONS.length} questions completed</div></div>`+renderAnswersFeed(null);return;}
+  const q=QUESTIONS.find(x=>x.id===aq);if(!q)return;
+  const ak=`q${aq}_t${activeTeamId}`,ea=state.answers[ak],ic=state.closedQuestions.includes(aq);
+  let h=`<div class="quiz-card"><div class="q-theme">Question ${q.id} of ${QUESTIONS.length} · ${q.theme}</div><div class="q-pts-badge">Correct: +${q.correct} pts · Wrong: ${q.wrong} pts</div><div class="q-text">${q.text}</div>`;
+  if(ea){const cls=ea.correct?'correct':'wrong';h+=`<div class="submitted-msg ${cls}">${ea.correct?`✓ Correct! +${q.correct} points added to ${team.name}.`:`✗ Wrong. ${q.wrong} points. Correct answer: ${q.answer}`}</div>`;if(q.type==='mc')h+=renderMCOpts(q,ea.choiceIndex,true);}
+  else if(ic){h+=`<div class="submitted-msg pending">⏱ Time's up — this question is now closed.</div>`;}
+  else if(q.type==='mc'){h+=`<div class="mc-options" id="mc-opts-${q.id}">`+q.options.map((o,i)=>`<div class="mc-option" id="mc-${q.id}-${i}" onclick="selMC(${q.id},${i})"><span class="mc-letter">${o.letter}</span>${o.text}</div>`).join('')+`</div><button class="btn btn-gold" id="mc-sub-${q.id}" onclick="subMC(${q.id})" disabled>提交 Submit Answer</button>`;}
+  else{h+=`<div class="text-input-wrap"><input class="answer-input" id="ans-${q.id}" placeholder="Type your answer here..." onkeydown="if(event.key==='Enter')subTxt(${q.id})"/></div><button class="btn btn-gold" onclick="subTxt(${q.id})">提交 Submit Answer</button>`;}
+  h+=`</div>`;c.innerHTML=h+renderAnswersFeed(aq);}
+
+function renderMCOpts(q,si,dis){return`<div class="mc-options">`+q.options.map((o,i)=>{let c='mc-option disabled';if(i===q.correctIndex)c+=' correct';else if(i===si)c+=' wrong';return`<div class="${c}"><span class="mc-letter">${o.letter}</span>${o.text}</div>`;}).join('')+`</div>`;}
+
+const selIdx={};
+function selMC(qid,idx){selIdx[qid]=idx;document.querySelectorAll(`#mc-opts-${qid} .mc-option`).forEach((e,i)=>e.classList.toggle('selected',i===idx));const b=document.getElementById(`mc-sub-${qid}`);if(b)b.disabled=false;}
+
+async function subMC(qid){const q=QUESTIONS.find(x=>x.id===qid),idx=selIdx[qid];if(idx===undefined){showToast('Please select an option.',true);return;}const cor=idx===q.correctIndex,ak=`q${qid}_t${activeTeamId}`;state.answers[ak]={answer:q.options[idx].text,choiceIndex:idx,correct:cor,points:cor?q.correct:q.wrong};const t=state.teams.find(t=>t.id===activeTeamId);t.quizPts+=cor?q.correct:q.wrong;addLog(`${t.name} answered Q${qid} ${cor?'correctly':'incorrectly'} (${cor?'+':''}${cor?q.correct:q.wrong} pts)`,cor?'pos':'neg');await saveState();renderQuizTeamView();showToast(cor?`✓ Correct! +${q.correct} pts`:`✗ Wrong. ${q.wrong} pts`,!cor);}
+
+async function subTxt(qid){const q=QUESTIONS.find(x=>x.id===qid),inp=document.getElementById(`ans-${qid}`);if(!inp)return;const v=inp.value.trim();if(!v){showToast('Please type an answer.',true);return;}const cor=q.keywords.some(k=>v.toLowerCase().includes(k.toLowerCase())),ak=`q${qid}_t${activeTeamId}`;state.answers[ak]={answer:v,correct:cor,points:cor?q.correct:q.wrong};const t=state.teams.find(t=>t.id===activeTeamId);t.quizPts+=cor?q.correct:q.wrong;addLog(`${t.name} answered Q${qid} ${cor?'correctly':'incorrectly'} (${cor?'+':''}${cor?q.correct:q.wrong} pts)`,cor?'pos':'neg');await saveState();renderQuizTeamView();showToast(cor?`✓ Correct! +${q.correct} pts`:`✗ Wrong. ${q.wrong} pts`,!cor);}
+
+function renderAnswersFeed(qid){if(!qid)return'';return`<div class="answers-feed"><h3>团队答案 · Team Answers</h3>`+state.teams.map(t=>{const k=`q${qid}_t${t.id}`,a=state.answers[k];return a?`<div class="answer-row"><span class="team-lbl">${t.name}</span><span class="ans-val">${a.answer}</span><span class="ans-result ${a.correct?'c':'w'}">${a.correct?'✓ correct':'✗ wrong'}</span></div>`:`<div class="answer-row"><span class="team-lbl">${t.name}</span><span class="ans-val" style="color:rgba(245,237,216,0.2);">—</span><span class="ans-result p">waiting</span></div>`;}).join('')+`</div>`;}
+
+let dN=null,dFT=null;
+function renderSetup(){
+  const asgn=state.teams.flatMap(t=>t.members);
+  const pool=UNASSIGNED_POOL.filter(n=>!asgn.includes(n));
+  document.getElementById('roster-pool').innerHTML=pool.length?pool.map(name=>{
+    const isB=name.startsWith('Student ');
+    if(isB)return`<div class="name-chip" style="padding:0;background:var(--white-08);border-style:dashed;"><input style="padding:4px 10px;background:transparent;border:none;color:var(--white);font-family:'Inter',sans-serif;font-size:12px;width:140px;outline:none;" placeholder="Add student name" onchange="renStu('${name}',this.value)" onclick="event.stopPropagation()"/></div>`;
+    return`<div class="name-chip" draggable="true" data-name="${name}" ondragstart="ds(event)" ondragend="de(event)">${name}</div>`;
+  }).join(''):`<span style="font-size:11px;color:var(--white-40);">All unassigned students have been placed.</span>`;
+  document.getElementById('teams-setup-grid').innerHTML=state.teams.map(team=>`<div class="team-slot"><div class="team-slot-header"><input class="team-name-input" value="${team.name}" onchange="renTeam(${team.id},this.value)" placeholder="Team name"/><span class="team-slot-count">${team.members.length}/5</span></div><div class="team-drop-zone" id="drop-${team.id}" ondragover="dov(event)" ondragleave="dlv(event)" ondrop="drp(event,${team.id})">${team.members.map(m=>`<div class="name-chip" draggable="true" data-name="${m}" data-team="${team.id}" ondragstart="ds(event)" ondragend="de(event)" ondblclick="retPool('${m.replace(/'/g,"\\'")}',${team.id})">${m}</div>`).join('')}</div></div>`).join('');}
+
+function renTeam(id,v){const t=state.teams.find(x=>x.id===id);if(t)t.name=v||`Team ${id}`;renderSubnav();}
+function renStu(old,nw){if(!nw.trim())return;const tr=nw.trim();SOCIAL_RAW[tr]=SOCIAL_RAW[old];delete SOCIAL_RAW[old];const i=ALL_STUDENTS.indexOf(old);if(i!==-1)ALL_STUDENTS[i]=tr;state.teams.forEach(t=>{const mi=t.members.indexOf(old);if(mi!==-1)t.members[mi]=tr;});renderSetup();}
+function ds(e){dN=e.target.dataset.name;dFT=e.target.dataset.team?parseInt(e.target.dataset.team):null;e.target.classList.add('dragging');}
+function de(e){e.target.classList.remove('dragging');}
+function dov(e){e.preventDefault();e.currentTarget.classList.add('drag-over');}
+function dlv(e){e.currentTarget.classList.remove('drag-over');}
+function drp(e,tid){e.preventDefault();e.currentTarget.classList.remove('drag-over');if(!dN)return;const t=state.teams.find(t=>t.id===tid);if(t.members.includes(dN))return;if(t.members.length>=5){showToast('Team is full (max 5)',true);return;}if(dFT)state.teams.find(t=>t.id===dFT).members=state.teams.find(t=>t.id===dFT).members.filter(m=>m!==dN);t.members.push(dN);renderSetup();}
+function retPool(name,tid){state.teams.find(t=>t.id===tid).members=state.teams.find(t=>t.id===tid).members.filter(m=>m!==name);renderSetup();}
+async function saveSetup(){await saveState();showToast('Teams saved!');renderSubnav();}
+function loadSetupFromState(){loadState();renderSetup();}
+
+function renderFacilitator(){
+  const aq=state.activeQuestion;
+  document.getElementById('fac-active-q').textContent=aq?`Q${aq} — ${QUESTIONS.find(q=>q.id===aq)?.theme}`:'None';
+  document.getElementById('q-status-list').innerHTML=QUESTIONS.map(q=>{const ia=state.activeQuestion===q.id,ic=state.closedQuestions.includes(q.id);return`<div class="q-status-row"><span class="q-lbl">Q${q.id} · ${q.theme}</span>${ia?'<span class="q-badge open">OPEN</span>':ic?'<span class="q-badge closed">CLOSED</span>':'<span class="q-badge upcoming">upcoming</span>'}</div>`;}).join('');
+  const opts=state.teams.map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
+  ['fac-part-team','fac-adj-team'].forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML=opts;});
+  const le=document.getElementById('activity-log');if(le)le.innerHTML=state.log.length?state.log.slice(0,50).map(l=>`<div class="log-entry ${l.type}">[${l.time}] ${l.msg}</div>`).join(''):'<div style="color:rgba(245,237,216,0.2);">No activity yet.</div>';
+  document.getElementById('social-status').style.display=state.socialApplied?'block':'none';}
+
+async function nextQuestion(){const rem=QUESTIONS.filter(q=>!state.closedQuestions.includes(q.id));if(!rem.length){showToast('All questions completed!');return;}if(state.activeQuestion)state.closedQuestions.push(state.activeQuestion);state.activeQuestion=rem[0].id;addLog(`Q${state.activeQuestion} opened`,'neutral');await saveState();render();}
+async function closeCurrentQuestion(){if(!state.activeQuestion){showToast('No question open.',true);return;}state.closedQuestions.push(state.activeQuestion);addLog(`Q${state.activeQuestion} closed`,'neutral');state.activeQuestion=null;await saveState();render();}
+async function addParticipation(){const tid=parseInt(document.getElementById('fac-part-team').value),note=document.getElementById('fac-part-note').value||'participation',t=state.teams.find(t=>t.id===tid);t.partPts+=50;addLog(`${t.name} +50 participation: ${note}`,'pos');await saveState();render();showToast(`+50 participation to ${t.name}`);}
+async function manualAdj(dir){const tid=parseInt(document.getElementById('fac-adj-team').value),pts=parseInt(document.getElementById('fac-adj-pts').value)||0,note=document.getElementById('fac-adj-note').value||'manual',t=state.teams.find(t=>t.id===tid),d=pts*dir;t.quizPts+=d;addLog(`${t.name} ${d>0?'+':''}${d} pts: ${note}`,d>0?'pos':'neg');await saveState();render();showToast(`${d>0?'+':''}${d} to ${t.name}`);}
+
+async function applySocial(){
+  if(state.socialApplied){showToast('Already applied. Use Reset first to reapply.',true);return;}
+  const anyMembers=state.teams.some(t=>t.members.length>0);
+  if(!anyMembers){showToast('No team members assigned yet. Set up teams first.',true);return;}
+  state.teams.forEach(t=>{
+    t.socialPts=t.members.reduce((s,n)=>s+calcSocial(n),0);
+    addLog(`${t.name} social score: ${t.socialPts} (${t.members.length} members)`,'neutral');
+  });
+  state.socialApplied=true;
+  addLog('Social scores applied to all teams.','neutral');
+  state.version=(state.version||0)+1;
+  lastVersion=state.version;
+  try{ await gameRef.set(state); render(); showToast('社会分 Social scores applied!');
+  }catch(e){ showToast('Social score save failed.',true); }
+}
+
+async function resetScores(){
+  if(!confirm('Reset all scores and answers? Teams kept.'))return;
+  state.teams.forEach(t=>{t.quizPts=0;t.partPts=0;t.socialPts=0;});
+  state.answers={};state.activeQuestion=null;state.closedQuestions=[];state.socialApplied=false;state.log=[];
+  state.version=(state.version||0)+1;
+  lastVersion=state.version;
+  addLog('Game reset','neutral');
+  try{ await gameRef.set(state); render(); showToast('Scores reset!');
+  }catch(e){ showToast('Reset failed — try again.',true); }
+}
+
+async function fullReset(){
+  if(!confirm('Full reset? Clears EVERYTHING.'))return;
+  state={teams:Array.from({length:7},(_,i)=>({id:i+1,name:`Team ${i+1}`,members:[],quizPts:0,partPts:0,socialPts:0})),activeQuestion:null,closedQuestions:[],answers:{},log:[],socialApplied:false,version:1};
+  lastVersion=state.version;
+  try{ await gameRef.set(state); render(); showToast('Full reset done!');
+  }catch(e){ showToast('Reset failed — try again.',true); }
+}
+
+function renderAlgorithm(){document.getElementById('social-breakdown-body').innerHTML=ALL_STUDENTS.map(name=>{const d=SOCIAL_RAW[name]||{},s=calcSocial(name);return`<tr><td>${name}</td><td>${d.posted?'✓':'—'}</td><td>${d.photo?'✓ (+30)':'—'}</td><td>${d.words>0?'+'+d.words:'—'}</td><td>${d.req?'✓':'—'}</td><td>${d.fun?'✓':'—'}</td><td>${d.contact?'✓':'—'}</td><td style="color:var(--gold-light);font-weight:500;">${s}</td></tr>`;}).join('');}
+
+function addLog(msg,type='neutral'){const time=new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});state.log.unshift({msg,type,time});if(state.log.length>100)state.log=state.log.slice(0,100);}
+function showToast(msg,isErr=false){const t=document.getElementById('toast');t.textContent=msg;t.className=isErr?'err show':'show';setTimeout(()=>t.className='',2800);}
+
+function render(){renderSubnav();renderScoreboard();renderSetup();renderFacilitator();renderAlgorithm();if(currentMain==='quiz')renderQuizTeamView();}
+
+(async()=>{await loadState();render();startSync();})();
+
+function toggleInstructions(){
+  const body=document.getElementById('instr-body');
+  const chevron=document.getElementById('instr-chevron');
+  const open=body.style.display==='none';
+  body.style.display=open?'block':'none';
+  chevron.style.transform=open?'rotate(180deg)':'rotate(0deg)';
+  const btn=chevron.parentElement;
+  btn.style.borderRadius=open?'12px 12px 0 0':'12px';
+}
+</script>
+</body>
+</html>
