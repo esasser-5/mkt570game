@@ -161,8 +161,8 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 16px
 @keyframes coinFall{0%{transform:translate(0,0) rotate(0deg);opacity:1;}100%{transform:translate(var(--coin-dx),110px) rotate(540deg);opacity:0;}}
 .cel-overlay{position:fixed;inset:0;pointer-events:none;z-index:9999;overflow:hidden;}
 .cel-env{position:absolute;bottom:0;animation:envRise linear forwards;}
-.cel-env-body{width:68px;height:88px;background:linear-gradient(150deg,#EF5350,#B71C1C);border-radius:10px 10px 6px 6px;border:2px solid #FFD700;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 24px rgba(229,57,53,0.6);}
-.cel-env-fu{font-family:'Noto Serif SC',serif;font-size:30px;color:#FFD700;line-height:1;}
+.cel-env-body{background:linear-gradient(150deg,#EF5350,#B71C1C);border-radius:10px 10px 6px 6px;border:2px solid #FFD700;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 32px rgba(229,57,53,0.7);}
+.cel-env-fu{font-family:'Noto Serif SC',serif;color:#FFD700;line-height:1;}
 .cel-coin{position:absolute;top:8px;width:18px;height:18px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#FFD54F,#FFC107,#E6A800);border:2px solid #FFD700;animation:coinFall ease-in forwards;}
 </style>
 </head>
@@ -718,29 +718,37 @@ function launchRedEnvelopes(){
   const old=document.getElementById('cel-overlay');if(old)old.remove();
   const ov=document.createElement('div');ov.id='cel-overlay';ov.className='cel-overlay';
   document.body.appendChild(ov);
-  const count=12;
+  const count=22;
   for(let i=0;i<count;i++){
-    const delay=(i*0.3).toFixed(2),dur=(2.8+Math.random()*1.4).toFixed(2),left=(4+Math.random()*88).toFixed(1);
+    const delay=(i*0.18).toFixed(2),dur=(1.8+Math.random()*1.2).toFixed(2),left=(2+Math.random()*94).toFixed(1);
+    const size=70+Math.floor(Math.random()*50);
     const env=document.createElement('div');env.className='cel-env';
-    env.style.cssText=`left:${left}%;animation-duration:${dur}s;animation-delay:${delay}s;`;
+    env.style.cssText=`left:${left}%;animation-duration:${dur}s;animation-delay:${delay}s;width:${size}px;`;
     const body=document.createElement('div');body.className='cel-env-body';
-    body.innerHTML='<div class="cel-env-fu">福</div>';env.appendChild(body);
-    const coins=3+Math.floor(Math.random()*3);
+    body.style.cssText=`width:${size}px;height:${Math.round(size*1.28)}px;font-size:${Math.round(size*0.44)}px;`;
+    body.innerHTML=`<div class="cel-env-fu" style="font-size:${Math.round(size*0.44)}px;">福</div>`;env.appendChild(body);
+    const coins=5+Math.floor(Math.random()*5);
     for(let c=0;c<coins;c++){
       const coin=document.createElement('div');coin.className='cel-coin';
-      const dx=((Math.random()-0.5)*70).toFixed(0);
-      const cdur=(0.7+Math.random()*0.5).toFixed(2),cdelay=(parseFloat(delay)+0.25+c*0.12).toFixed(2);
-      coin.style.cssText=`--coin-dx:${dx}px;left:${15+Math.random()*38}px;animation-duration:${cdur}s;animation-delay:${cdelay}s;`;
+      const dx=((Math.random()-0.5)*120).toFixed(0);
+      const cs=14+Math.floor(Math.random()*14);
+      const cdur=(0.6+Math.random()*0.6).toFixed(2),cdelay=(parseFloat(delay)+0.15+c*0.09).toFixed(2);
+      coin.style.cssText=`--coin-dx:${dx}px;left:${8+Math.random()*60}px;width:${cs}px;height:${cs}px;animation-duration:${cdur}s;animation-delay:${cdelay}s;`;
       env.appendChild(coin);
     }
     ov.appendChild(env);
   }
-  setTimeout(()=>{const o=document.getElementById('cel-overlay');if(o)o.remove();},(count*0.3+4.5)*1000);
+  setTimeout(()=>{const o=document.getElementById('cel-overlay');if(o)o.remove();},(count*0.18+4)*1000);
 }
 async function launchCelebration(){
-  state.celebration={type:'redEnvelope',ts:Date.now()};
-  addLog('🧧 Red envelope celebration launched!','neutral');
-  await saveState();render();showToast('🧧 Red envelopes launched!');
+  const ts=Date.now();
+  await saveState((s)=>{
+    s.celebration={type:'redEnvelope',ts};
+    s.log=s.log||[];
+    s.log.unshift({msg:'🧧 Red envelope celebration launched!',type:'neutral',time:new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'})});
+    if(s.log.length>100)s.log=s.log.slice(0,100);
+  });
+  render();showToast('🧧 Red envelopes launched!');
 }
 
 function addLog(msg,type='neutral'){const time=new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});state.log.unshift({msg,type,time});if(state.log.length>100)state.log=state.log.slice(0,100);}
@@ -748,7 +756,7 @@ function showToast(msg,isErr=false){const t=document.getElementById('toast');t.t
 
 function render(){renderSubnav();renderScoreboard();renderSetup();renderFacilitator();renderAlgorithm();if(currentMain==='quiz')renderQuizTeamView();checkCelebration();}
 
-(async()=>{await loadState();render();startSync();})();
+(async()=>{await loadState();lastCelebrationTs=state.celebration?.ts||0;render();startSync();})();
 
 function toggleInstructions(){
   const body=document.getElementById('instr-body');
