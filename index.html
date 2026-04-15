@@ -421,11 +421,18 @@ function normalizeState(s){
   return s;
 }
 
-async function saveState(){
-  state.version=(state.version||0)+1;
-  lastVersion=state.version;
-  try{ await gameRef.set(state); return true; }
-  catch(e){ console.error('saveState failed:',e); return false; }
+async function saveState(mutate){
+  try{
+    await gameRef.transaction((current)=>{
+      const s=normalizeState(current||JSON.parse(JSON.stringify(state)));
+      if(mutate) mutate(s);
+      s.version=(s.version||0)+1;
+      return s;
+    });
+    const snap=await gameRef.once('value');
+    if(snap.exists()){state=normalizeState(snap.val());lastVersion=state.version;}
+    return true;
+  }catch(e){console.error('saveState failed:',e);return false;}
 }
 
 async function loadState(){
@@ -490,9 +497,43 @@ function renderMCOpts(q,si,dis){return`<div class="mc-options">`+q.options.map((
 const selIdx={};
 function selMC(qid,idx){selIdx[qid]=idx;document.querySelectorAll(`#mc-opts-${qid} .mc-option`).forEach((e,i)=>e.classList.toggle('selected',i===idx));const b=document.getElementById(`mc-sub-${qid}`);if(b)b.disabled=false;}
 
-async function subMC(qid){const q=QUESTIONS.find(x=>x.id===qid),idx=selIdx[qid];if(idx===undefined){showToast('Please select an option.',true);return;}const cor=idx===q.correctIndex,ak=`q${qid}_t${activeTeamId}`;state.answers[ak]={answer:q.options[idx].text,choiceIndex:idx,correct:cor,points:cor?q.correct:q.wrong};const t=state.teams.find(t=>t.id===activeTeamId);t.quizPts+=cor?q.correct:q.wrong;addLog(`${t.name} answered Q${qid} ${cor?'correctly':'incorrectly'} (${cor?'+':''}${cor?q.correct:q.wrong} pts)`,cor?'pos':'neg');await saveState();renderQuizTeamView();showToast(cor?`✓ Correct! +${q.correct} pts`:`✗ Wrong. ${q.wrong} pts`,!cor);}
+async function subMC(qid){
+  const q=QUESTIONS.find(x=>x.id===qid),idx=selIdx[qid];
+  if(idx===undefined){showToast('Please select an option.',true);return;}
+  const cor=idx===q.correctIndex,ak=`q${qid}_t${activeTeamId}`;
+  const ansObj={answer:q.options[idx].text,choiceIndex:idx,correct:cor,points:cor?q.correct:q.wrong};
+  await saveState((s)=>{
+    if(!s.answers)s.answers={};
+    s.answers[ak]=ansObj;
+    const t=s.teams.find(t=>t.id===activeTeamId);
+    t.quizPts+=(cor?q.correct:q.wrong);
+    s.log=s.log||[];
+    s.log.unshift({msg:`${t.name} answered Q${qid} ${cor?'correctly':'incorrectly'} (${cor?'+':''}${cor?q.correct:q.wrong} pts)`,type:cor?'pos':'neg',time:new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'})});
+    if(s.log.length>100)s.log=s.log.slice(0,100);
+  });
+  render();renderQuizTeamView();
+  showToast(cor?`✓ Correct! +${q.correct} pts`:`✗ Wrong. ${q.wrong} pts`,!cor);
+}
 
-async function subTxt(qid){const q=QUESTIONS.find(x=>x.id===qid),inp=document.getElementById(`ans-${qid}`);if(!inp)return;const v=inp.value.trim();if(!v){showToast('Please type an answer.',true);return;}const cor=q.keywords.some(k=>v.toLowerCase().includes(k.toLowerCase())),ak=`q${qid}_t${activeTeamId}`;state.answers[ak]={answer:v,correct:cor,points:cor?q.correct:q.wrong};const t=state.teams.find(t=>t.id===activeTeamId);t.quizPts+=cor?q.correct:q.wrong;addLog(`${t.name} answered Q${qid} ${cor?'correctly':'incorrectly'} (${cor?'+':''}${cor?q.correct:q.wrong} pts)`,cor?'pos':'neg');await saveState();renderQuizTeamView();showToast(cor?`✓ Correct! +${q.correct} pts`:`✗ Wrong. ${q.wrong} pts`,!cor);}
+async function subTxt(qid){
+  const q=QUESTIONS.find(x=>x.id===qid),inp=document.getElementById(`ans-${qid}`);
+  if(!inp)return;
+  const v=inp.value.trim();
+  if(!v){showToast('Please type an answer.',true);return;}
+  const cor=q.keywords.some(k=>v.toLowerCase().includes(k.toLowerCase())),ak=`q${qid}_t${activeTeamId}`;
+  const ansObj={answer:v,correct:cor,points:cor?q.correct:q.wrong};
+  await saveState((s)=>{
+    if(!s.answers)s.answers={};
+    s.answers[ak]=ansObj;
+    const t=s.teams.find(t=>t.id===activeTeamId);
+    t.quizPts+=(cor?q.correct:q.wrong);
+    s.log=s.log||[];
+    s.log.unshift({msg:`${t.name} answered Q${qid} ${cor?'correctly':'incorrectly'} (${cor?'+':''}${cor?q.correct:q.wrong} pts)`,type:cor?'pos':'neg',time:new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'})});
+    if(s.log.length>100)s.log=s.log.slice(0,100);
+  });
+  render();renderQuizTeamView();
+  showToast(cor?`✓ Correct! +${q.correct} pts`:`✗ Wrong. ${q.wrong} pts`,!cor);
+}
 
 function renderAnswersFeed(qid){if(!qid)return'';return`<div class="answers-feed"><h3>团队答案 · Team Answers</h3>`+state.teams.map(t=>{const k=`q${qid}_t${t.id}`,a=state.answers[k];return a?`<div class="answer-row"><span class="team-lbl">${t.name}</span><span class="ans-val">${a.answer}</span><span class="ans-result ${a.correct?'c':'w'}">${a.correct?'✓ correct':'✗ wrong'}</span></div>`:`<div class="answer-row"><span class="team-lbl">${t.name}</span><span class="ans-val" style="color:rgba(245,237,216,0.2);">—</span><span class="ans-result p">waiting</span></div>`;}).join('')+`</div>`;}
 
@@ -515,7 +556,11 @@ function dov(e){e.preventDefault();e.currentTarget.classList.add('drag-over');}
 function dlv(e){e.currentTarget.classList.remove('drag-over');}
 function drp(e,tid){e.preventDefault();e.currentTarget.classList.remove('drag-over');if(!dN)return;const t=state.teams.find(t=>t.id===tid);if(t.members.includes(dN))return;if(t.members.length>=5){showToast('Team is full (max 5)',true);return;}if(dFT)state.teams.find(t=>t.id===dFT).members=state.teams.find(t=>t.id===dFT).members.filter(m=>m!==dN);t.members.push(dN);renderSetup();}
 function retPool(name,tid){state.teams.find(t=>t.id===tid).members=state.teams.find(t=>t.id===tid).members.filter(m=>m!==name);renderSetup();}
-async function saveSetup(){await saveState();showToast('Teams saved!');renderSubnav();}
+async function saveSetup(){
+  const snap=JSON.parse(JSON.stringify(state.teams));
+  await saveState((s)=>{s.teams=snap;});
+  showToast('Teams saved!');renderSubnav();
+}
 function loadSetupFromState(){loadState();renderSetup();}
 
 function renderFacilitator(){
@@ -527,25 +572,77 @@ function renderFacilitator(){
   const le=document.getElementById('activity-log');if(le)le.innerHTML=state.log.length?state.log.slice(0,50).map(l=>`<div class="log-entry ${l.type}">[${l.time}] ${l.msg}</div>`).join(''):'<div style="color:rgba(245,237,216,0.2);">No activity yet.</div>';
   document.getElementById('social-status').style.display=state.socialApplied?'block':'none';}
 
-async function nextQuestion(){const rem=QUESTIONS.filter(q=>!state.closedQuestions.includes(q.id));if(!rem.length){showToast('All questions completed!');return;}if(state.activeQuestion)state.closedQuestions.push(state.activeQuestion);state.activeQuestion=rem[0].id;addLog(`Q${state.activeQuestion} opened`,'neutral');await saveState();render();}
-async function closeCurrentQuestion(){if(!state.activeQuestion){showToast('No question open.',true);return;}state.closedQuestions.push(state.activeQuestion);addLog(`Q${state.activeQuestion} closed`,'neutral');state.activeQuestion=null;await saveState();render();}
-async function addParticipation(){const tid=parseInt(document.getElementById('fac-part-team').value),note=document.getElementById('fac-part-note').value||'participation',t=state.teams.find(t=>t.id===tid);t.partPts+=50;addLog(`${t.name} +50 participation: ${note}`,'pos');await saveState();render();showToast(`+50 participation to ${t.name}`);}
-async function manualAdj(dir){const tid=parseInt(document.getElementById('fac-adj-team').value),pts=parseInt(document.getElementById('fac-adj-pts').value)||0,note=document.getElementById('fac-adj-note').value||'manual',t=state.teams.find(t=>t.id===tid),d=pts*dir;t.quizPts+=d;addLog(`${t.name} ${d>0?'+':''}${d} pts: ${note}`,d>0?'pos':'neg');await saveState();render();showToast(`${d>0?'+':''}${d} to ${t.name}`);}
+async function nextQuestion(){
+  const rem=QUESTIONS.filter(q=>!state.closedQuestions.includes(q.id));
+  if(!rem.length){showToast('All questions completed!');return;}
+  await saveState((s)=>{
+    if(!Array.isArray(s.closedQuestions))s.closedQuestions=[];
+    const remQ=QUESTIONS.filter(q=>!s.closedQuestions.includes(q.id));
+    if(!remQ.length)return;
+    if(s.activeQuestion)s.closedQuestions.push(s.activeQuestion);
+    s.activeQuestion=remQ[0].id;
+    s.log=s.log||[];
+    s.log.unshift({msg:`Q${s.activeQuestion} opened`,type:'neutral',time:new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'})});
+    if(s.log.length>100)s.log=s.log.slice(0,100);
+  });
+  render();
+}
+async function closeCurrentQuestion(){
+  if(!state.activeQuestion){showToast('No question open.',true);return;}
+  await saveState((s)=>{
+    if(!s.activeQuestion)return;
+    if(!Array.isArray(s.closedQuestions))s.closedQuestions=[];
+    s.closedQuestions.push(s.activeQuestion);
+    s.log=s.log||[];
+    s.log.unshift({msg:`Q${s.activeQuestion} closed`,type:'neutral',time:new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'})});
+    if(s.log.length>100)s.log=s.log.slice(0,100);
+    s.activeQuestion=null;
+  });
+  render();
+}
+async function addParticipation(){
+  const tid=parseInt(document.getElementById('fac-part-team').value);
+  const note=document.getElementById('fac-part-note').value||'participation';
+  await saveState((s)=>{
+    const t=s.teams.find(t=>t.id===tid);
+    t.partPts+=50;
+    s.log=s.log||[];
+    s.log.unshift({msg:`${t.name} +50 participation: ${note}`,type:'pos',time:new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'})});
+    if(s.log.length>100)s.log=s.log.slice(0,100);
+  });
+  render();
+  showToast(`+50 participation to ${state.teams.find(t=>t.id===tid).name}`);
+}
+async function manualAdj(dir){
+  const tid=parseInt(document.getElementById('fac-adj-team').value);
+  const pts=parseInt(document.getElementById('fac-adj-pts').value)||0;
+  const note=document.getElementById('fac-adj-note').value||'manual';
+  const d=pts*dir;
+  await saveState((s)=>{
+    const t=s.teams.find(t=>t.id===tid);
+    t.quizPts+=d;
+    s.log=s.log||[];
+    s.log.unshift({msg:`${t.name} ${d>0?'+':''}${d} pts: ${note}`,type:d>0?'pos':'neg',time:new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'})});
+    if(s.log.length>100)s.log=s.log.slice(0,100);
+  });
+  render();
+  showToast(`${d>0?'+':''}${d} to ${state.teams.find(t=>t.id===tid).name}`);
+}
 
 async function applySocial(){
   if(state.socialApplied){showToast('Already applied. Use Reset first to reapply.',true);return;}
   const anyMembers=state.teams.some(t=>t.members.length>0);
   if(!anyMembers){showToast('No team members assigned yet. Set up teams first.',true);return;}
-  state.teams.forEach(t=>{
-    t.socialPts=t.members.reduce((s,n)=>s+calcSocial(n),0);
-    addLog(`${t.name} social score: ${t.socialPts} (${t.members.length} members)`,'neutral');
+  await saveState((s)=>{
+    if(s.socialApplied)return;
+    s.teams.forEach(t=>{t.socialPts=t.members.reduce((sum,n)=>sum+calcSocial(n),0);});
+    s.socialApplied=true;
+    s.log=s.log||[];
+    s.log.unshift({msg:'Social scores applied to all teams.',type:'neutral',time:new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'})});
+    if(s.log.length>100)s.log=s.log.slice(0,100);
   });
-  state.socialApplied=true;
-  addLog('Social scores applied to all teams.','neutral');
-  state.version=(state.version||0)+1;
-  lastVersion=state.version;
-  try{ await gameRef.set(state); render(); showToast('社会分 Social scores applied!');
-  }catch(e){ showToast('Social score save failed.',true); }
+  render();
+  showToast('社会分 Social scores applied!');
 }
 
 async function resetScores(){
