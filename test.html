@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Zhima Game · Tests</title>
+<style>
+body{font-family:monospace;background:#0D2B5E;color:#fff;padding:24px;max-width:820px;margin:0 auto;}
+h1{color:#FFC107;margin-bottom:4px;}
+.subtitle{color:rgba(255,255,255,0.4);font-size:12px;margin-bottom:28px;}
+h2{color:#FFD54F;font-size:13px;letter-spacing:0.1em;text-transform:uppercase;margin:24px 0 10px;}
+.test{display:flex;align-items:baseline;gap:10px;padding:7px 12px;border-radius:6px;font-size:13px;margin-bottom:5px;}
+.pass{background:rgba(67,160,71,0.15);border:1px solid rgba(67,160,71,0.4);}
+.fail{background:rgba(229,57,53,0.15);border:1px solid rgba(229,57,53,0.6);}
+.icon{font-size:14px;flex-shrink:0;}
+.label{flex:1;color:rgba(255,255,255,0.85);}
+.detail{font-size:11px;color:rgba(255,255,255,0.4);}
+.fail .detail{color:#EF9A9A;}
+.summary{margin-top:28px;padding:16px 20px;border-radius:10px;font-size:15px;font-weight:bold;}
+.summary.all-pass{background:rgba(67,160,71,0.2);border:2px solid #43A047;color:#A5D6A7;}
+.summary.some-fail{background:rgba(229,57,53,0.2);border:2px solid #E53935;color:#EF9A9A;}
+</style>
+</head>
+<body>
+<h1>芝麻信用 · Test Suite</h1>
+<div class="subtitle">Open this file in any browser. No server needed.</div>
+<div id="output"></div>
+<script>
+// ─── Copied pure-logic from index.html (no Firebase, no DOM) ───────────────
+
+const BASE_SCORE = 350;
+
+const QUESTIONS = [
+  {id:1,theme:'AI Factory',type:'mc',
+   options:[{letter:'A',text:'0 interest for the first month'},{letter:'B',text:'0 human involvement in the process'},{letter:'C',text:'0 documents required from the applicant'},{letter:'D',text:'0 rejections for first-time borrowers'}],
+   correctIndex:1,answer:'B — 0 human involvement in the process',correct:40,wrong:-20},
+  {id:2,theme:'SCM / CRM / NPD',type:'text',
+   keywords:['40'],answer:'40%',correct:80,wrong:-40},
+  {id:3,theme:'AI Use Cases',type:'mc',
+   options:[{letter:'A',text:'5 seconds'},{letter:'B',text:'0.1 seconds'},{letter:'C',text:'1 minute'},{letter:'D',text:'30 seconds'}],
+   correctIndex:1,answer:'B — 0.1 seconds',correct:60,wrong:-30},
+  {id:4,theme:'Scale / Scope / Learning',type:'text',
+   keywords:['0.1'],answer:'RMB 0.1',correct:100,wrong:-50},
+  {id:5,theme:'Structural Differences',type:'mc',
+   options:[{letter:'A',text:'1%'},{letter:'B',text:'3.5%'},{letter:'C',text:'5%'},{letter:'D',text:'8%'}],
+   correctIndex:2,answer:'C — 5%',correct:60,wrong:-30},
+];
+
+const SOCIAL_RAW = {
+  'Shikha Thakkar':{posted:true,photo:true,words:25,req:true,fun:true,contact:true},
+  'Mriga Khera':{posted:true,photo:false,words:25,req:true,fun:true,contact:true},
+  'Chinmay Bharadwaj':{posted:false,photo:false,words:0,req:false,fun:false,contact:false},
+  'Eaint Phyu':{posted:true,photo:true,words:5,req:false,fun:false,contact:false},
+};
+
+function calcSocial(name){
+  const d=SOCIAL_RAW[name];
+  if(!d||!d.posted)return 0;
+  let s=20;
+  if(d.photo)s+=30;
+  s+=d.words;
+  if(d.req)s+=15;
+  if(d.fun)s+=10;
+  if(d.contact)s+=5;
+  return s;
+}
+
+function totalScore(t){
+  if(t.isFacilitator)return 0;
+  return Math.min(900, BASE_SCORE + t.quizPts + t.partPts + t.socialPts);
+}
+
+function normalizeState(s){
+  if(!s)return s;
+  if(!Array.isArray(s.closedQuestions))s.closedQuestions=s.closedQuestions?Object.values(s.closedQuestions):[];
+  if(!Array.isArray(s.log))s.log=s.log?Object.values(s.log):[];
+  if(!s.answers)s.answers={};
+  if(s.teams){
+    if(!Array.isArray(s.teams))s.teams=Object.values(s.teams);
+    s.teams.forEach(t=>{if(!Array.isArray(t.members))t.members=t.members?Object.values(t.members):[];});
+  }
+  return s;
+}
+
+// ─── Test runner ────────────────────────────────────────────────────────────
+
+let passed=0, failed=0;
+const sections=[];
+let current=null;
+
+function section(name){
+  current={name,tests:[]};
+  sections.push(current);
+}
+
+function expect(label, actual, expected){
+  const ok = JSON.stringify(actual)===JSON.stringify(expected);
+  current.tests.push({label, ok, actual, expected});
+  if(ok) passed++; else failed++;
+}
+
+function expectTrue(label, val){
+  current.tests.push({label, ok:!!val, actual:val, expected:true});
+  if(val) passed++; else failed++;
+}
+
+// ─── Tests ──────────────────────────────────────────────────────────────────
+
+section('calcSocial — social score calculation');
+expect('No post → 0', calcSocial('Chinmay Bharadwaj'), 0);
+// Shikha: posted(20) + photo(30) + words=25 + req(15) + fun(10) + contact(5) = 105
+expect('Full profile → 105', calcSocial('Shikha Thakkar'), 105);
+// Mriga: posted(20) + no photo + words=25 + req(15) + fun(10) + contact(5) = 75
+expect('No photo → 75', calcSocial('Mriga Khera'), 75);
+// Eaint: posted(20) + photo(30) + words=5 + no req + no fun + no contact = 55
+expect('Photo but short post → 55', calcSocial('Eaint Phyu'), 55);
+expect('Unknown name → 0', calcSocial('Nobody Here'), 0);
+
+section('totalScore — BASE_SCORE + components, capped at 900');
+expect('Starting score (all zeros)', totalScore({quizPts:0,partPts:0,socialPts:0}), BASE_SCORE);
+expect('With quiz points', totalScore({quizPts:100,partPts:0,socialPts:0}), 450);
+expect('With all components', totalScore({quizPts:200,partPts:100,socialPts:105}), 755);
+expect('Cap at 900', totalScore({quizPts:400,partPts:200,socialPts:200}), 900);
+expect('Facilitator always 0', totalScore({isFacilitator:true,quizPts:999,partPts:0,socialPts:0}), 0);
+
+section('MC answer scoring — correct vs wrong detection');
+const q1=QUESTIONS[0]; // correctIndex:1 → +40 / -20
+expect('MC correct index detected', q1.correctIndex===1, true);
+expect('MC correct points', q1.correct, 40);
+expect('MC wrong points (negative)', q1.wrong, -20);
+
+const q3=QUESTIONS[2]; // correctIndex:1 → +60 / -30
+expect('Q3 correct points', q3.correct, 60);
+expect('Q3 wrong points', q3.wrong, -30);
+
+section('Text answer keyword matching');
+const q2=QUESTIONS[1]; // keywords:['40']
+function txtMatch(q,answer){ return q.keywords.some(k=>answer.toLowerCase().includes(k.toLowerCase())); }
+expectTrue('Exact number "40" matches', txtMatch(q2,'40'));
+expectTrue('"40%" matches', txtMatch(q2,'40%'));
+expectTrue('"The answer is 40 percent" matches', txtMatch(q2,'The answer is 40 percent'));
+expect('"45" does not match', txtMatch(q2,'45'), false);
+expect('Empty string does not match', txtMatch(q2,''), false);
+
+const q4=QUESTIONS[3]; // keywords:['0.1']
+expectTrue('"0.1" matches Q4', txtMatch(q4,'0.1'));
+expectTrue('"RMB 0.1" matches Q4', txtMatch(q4,'RMB 0.1'));
+expect('"0.2" does not match Q4', txtMatch(q4,'0.2'), false);
+
+section('normalizeState — Firebase null-array handling');
+// Firebase sends null for empty arrays
+const s1=normalizeState({closedQuestions:null,log:null,answers:null,teams:null});
+expect('null closedQuestions → []', s1.closedQuestions, []);
+expect('null log → []', s1.log, []);
+expect('null answers → {}', s1.answers, {});
+
+// Firebase sends object-indexed arrays when array has items
+const s2=normalizeState({
+  closedQuestions:{0:1,1:2},
+  log:{0:{msg:'test',type:'pos',time:'10:00 AM'}},
+  answers:{},
+  teams:{0:{id:1,name:'T1',members:{0:'Alice',1:'Bob'},quizPts:0,partPts:0,socialPts:0}}
+});
+expect('Object closedQuestions → array', s2.closedQuestions, [1,2]);
+expect('Object log → array', Array.isArray(s2.log), true);
+expect('Object teams → array', Array.isArray(s2.teams), true);
+expect('Object members inside team → array', s2.teams[0].members, ['Alice','Bob']);
+
+// normalizeState is idempotent (running it twice gives same result)
+const s3a=normalizeState({closedQuestions:[1,2],log:[],answers:{},teams:[]});
+const s3b=normalizeState(JSON.parse(JSON.stringify(s3a)));
+expect('Idempotent: closedQuestions unchanged', s3b.closedQuestions, [1,2]);
+
+section('Question sequencing logic');
+// nextQuestion logic: take first question not in closedQuestions
+function nextQ(closedQuestions, activeQuestion){
+  const rem=QUESTIONS.filter(q=>!closedQuestions.includes(q.id));
+  if(!rem.length)return null;
+  return rem[0].id;
+}
+expect('First question is Q1', nextQ([],null), 1);
+expect('After Q1 closed, next is Q2', nextQ([1],1), 2);
+expect('After Q1+Q2 closed, next is Q3', nextQ([1,2],2), 3);
+expect('All closed → null', nextQ([1,2,3,4,5],5), null);
+
+section('Score capping edge cases');
+expect('Score at exactly 900 (no cap needed)', totalScore({quizPts:550,partPts:0,socialPts:0}), 900);
+expect('Score of 899 not rounded up', totalScore({quizPts:549,partPts:0,socialPts:0}), 899);
+expect('Negative quiz pts still add to base', totalScore({quizPts:-50,partPts:0,socialPts:0}), 300);
+
+// ─── Render results ─────────────────────────────────────────────────────────
+
+const out=document.getElementById('output');
+sections.forEach(sec=>{
+  const h=document.createElement('h2');h.textContent=sec.name;out.appendChild(h);
+  sec.tests.forEach(t=>{
+    const div=document.createElement('div');
+    div.className='test '+(t.ok?'pass':'fail');
+    div.innerHTML=`<span class="icon">${t.ok?'✓':'✗'}</span><span class="label">${t.label}</span>`
+      +(t.ok?'':`<span class="detail">got ${JSON.stringify(t.actual)}, expected ${JSON.stringify(t.expected)}</span>`);
+    out.appendChild(div);
+  });
+});
+
+const sum=document.createElement('div');
+sum.className='summary '+(failed===0?'all-pass':'some-fail');
+sum.textContent=failed===0
+  ?`✓ All ${passed} tests passed`
+  :`✗ ${failed} test${failed>1?'s':''} failed · ${passed} passed`;
+out.appendChild(sum);
+</script>
+</body>
+</html>
