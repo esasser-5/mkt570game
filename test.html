@@ -50,7 +50,7 @@ const SOCIAL_RAW = {
   'Shikha Thakkar':{posted:true,photo:true,words:25,req:true,fun:true,contact:true},
   'Akshat Paresh Vaidya':{posted:true,photo:false,words:15,req:true,fun:false,contact:false},
   'Jiya Anilkumar Chaudhary':{posted:true,photo:false,words:25,req:true,fun:true,contact:false},
-  'Michael Mendoza':{posted:false,photo:false,words:0,req:false,fun:false,contact:false},
+  'Yajayra Mendoza':{posted:true,photo:false,words:5,req:true,fun:true,contact:false},
   'Mriga Khera':{posted:true,photo:false,words:25,req:true,fun:true,contact:true},
   'Chinmay Bharadwaj':{posted:false,photo:false,words:0,req:false,fun:false,contact:false},
   'Eaint Phyu':{posted:true,photo:true,words:5,req:false,fun:false,contact:false},
@@ -122,8 +122,8 @@ expect('Unknown name → 0', calcSocial('Nobody Here'), 0);
 expect('Akshat Paresh Vaidya → 50', calcSocial('Akshat Paresh Vaidya'), 50);
 // Jiya Anilkumar Chaudhary: posted(20) + no photo + words=25 + req(15) + fun(10) = 70
 expect('Jiya Anilkumar Chaudhary → 70', calcSocial('Jiya Anilkumar Chaudhary'), 70);
-// Michael Mendoza: placeholder — no post → 0
-expect('Michael Mendoza placeholder → 0', calcSocial('Michael Mendoza'), 0);
+// Yajayra Mendoza: posted(20) + no photo + words=5 + req(15) + fun(10) = 50
+expect('Yajayra Mendoza → 50', calcSocial('Yajayra Mendoza'), 50);
 
 section('totalScore — BASE_SCORE + components, capped at 900');
 expect('Starting score (all zeros)', totalScore({quizPts:0,partPts:0,socialPts:0}), BASE_SCORE);
