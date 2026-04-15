@@ -136,6 +136,13 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 16px
 #toast{position:fixed;bottom:24px;right:24px;padding:12px 20px;background:var(--yellow);color:var(--blue-bg);font-family:'Inter',sans-serif;font-size:12px;font-weight:700;border-radius:8px;transform:translateY(70px);opacity:0;transition:all 0.3s;z-index:999;max-width:300px;}
 #toast.show{transform:translateY(0);opacity:1;}
 #toast.err{background:var(--red);color:white;}
+@keyframes envRise{0%{transform:translateY(110vh);opacity:1;}80%{opacity:1;}100%{transform:translateY(-25vh);opacity:0;}}
+@keyframes coinFall{0%{transform:translate(0,0) rotate(0deg);opacity:1;}100%{transform:translate(var(--coin-dx),110px) rotate(540deg);opacity:0;}}
+.cel-overlay{position:fixed;inset:0;pointer-events:none;z-index:9999;overflow:hidden;}
+.cel-env{position:absolute;bottom:0;animation:envRise linear forwards;}
+.cel-env-body{width:68px;height:88px;background:linear-gradient(150deg,#EF5350,#B71C1C);border-radius:10px 10px 6px 6px;border:2px solid #FFD700;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 24px rgba(229,57,53,0.6);}
+.cel-env-fu{font-family:'Noto Serif SC',serif;font-size:30px;color:#FFD700;line-height:1;}
+.cel-coin{position:absolute;top:8px;width:18px;height:18px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#FFD54F,#FFC107,#E6A800);border:2px solid #FFD700;animation:coinFall ease-in forwards;}
 </style>
 </head>
 <body>
@@ -250,6 +257,11 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 16px
       <p style="font-size:13px;color:rgba(245,237,216,0.5);font-family:'DM Mono',monospace;margin-bottom:12px;">Apply discussion board social scores as a one-time bonus. Do this at the end as a reveal!</p>
       <button class="btn btn-gold" onclick="applySocial()">Apply 社会分 Social Baseline</button>
       <p id="social-status" style="font-size:11px;color:#7DEBA8;font-family:'DM Mono',monospace;margin-top:8px;display:none;">✓ Social scores applied.</p>
+    </div>
+    <div class="fac-card">
+      <h3>🧧 Celebration</h3>
+      <p style="font-size:13px;color:rgba(245,237,216,0.5);font-family:'DM Mono',monospace;margin-bottom:12px;">Launch a red envelope rain for all connected players at once.</p>
+      <button class="btn btn-red" onclick="launchCelebration()">🧧 Launch 红包 Red Envelopes</button>
     </div>
     <div class="fac-card" style="grid-column:span 2;">
       <h3>📜 Activity Log</h3>
@@ -398,15 +410,15 @@ const UNASSIGNED_POOL=['Eaint Phyu','Amina Puskar','Anushmita Sikari','Crissely 
 function calcSocial(name){const d=SOCIAL_RAW[name];if(!d||!d.posted)return 0;let s=20;if(d.photo)s+=30;s+=d.words;if(d.req)s+=15;if(d.fun)s+=10;if(d.contact)s+=5;return s;}
 
 let state={teams:[
-  {id:1,name:'Facilitators',members:['Emily Sasser','Meetul Panchal','Constance Sarantos','Hassan Osaid','Zainab Siddique'],quizPts:0,partPts:0,socialPts:0,isFacilitator:true},
-  {id:2,name:'Team 2',members:['Sreekar Mundla','Boris Patarov','Anirudh Siddheswaran','Shikha Thakkar','Akshat Vaidya'],quizPts:0,partPts:0,socialPts:0},
-  {id:3,name:'Team 3',members:['Imisioluwa Grace Adenuga','Shamia Charles','Nida Hussain','Haiming Liu','Francesco Roda'],quizPts:0,partPts:0,socialPts:0},
-  {id:4,name:'Team 4',members:['Jiya Chaudhary','Mriga Khera','Collin Lane','Jiya Patel'],quizPts:0,partPts:0,socialPts:0},
-  {id:5,name:'Team 5',members:['Chinmay Bharadwaj','Alexandra Paset','Patricia Rodriguez','Helly Shah','Viktoriia Stefaniv'],quizPts:0,partPts:0,socialPts:0},
-  {id:6,name:'Team 6',members:['Rocio Garcia Perez','Michael Jang','Yajayra Marcos','Kristina Shevchenko'],quizPts:0,partPts:0,socialPts:0},
-  {id:7,name:'Team 7',members:['Vincent Cracchiolo','Safa Farooq','Harshita Makan','Lokeshwar Vijayasankar'],quizPts:0,partPts:0,socialPts:0},
-],activeQuestion:null,closedQuestions:[],answers:{},log:[],socialApplied:false,version:0};
-let activeTeamId=null,lastVersion=-1,currentMain='scoreboard';
+  {id:1,name:'Facilitators',members:['Emily Sasser','Meetul Panchal','Constance Sarantos','Hassan Osaid','Zainab Siddique'],quizPts:0,partPts:0,socialPts:0,tieBreakPts:0,isFacilitator:true},
+  {id:2,name:'Team 2',members:['Sreekar Mundla','Boris Patarov','Anirudh Siddheswaran','Shikha Thakkar','Akshat Vaidya'],quizPts:0,partPts:0,socialPts:0,tieBreakPts:0},
+  {id:3,name:'Team 3',members:['Imisioluwa Grace Adenuga','Shamia Charles','Nida Hussain','Haiming Liu','Francesco Roda'],quizPts:0,partPts:0,socialPts:0,tieBreakPts:0},
+  {id:4,name:'Team 4',members:['Jiya Chaudhary','Mriga Khera','Collin Lane','Jiya Patel'],quizPts:0,partPts:0,socialPts:0,tieBreakPts:0},
+  {id:5,name:'Team 5',members:['Chinmay Bharadwaj','Alexandra Paset','Patricia Rodriguez','Helly Shah','Viktoriia Stefaniv'],quizPts:0,partPts:0,socialPts:0,tieBreakPts:0},
+  {id:6,name:'Team 6',members:['Rocio Garcia Perez','Michael Jang','Yajayra Marcos','Kristina Shevchenko'],quizPts:0,partPts:0,socialPts:0,tieBreakPts:0},
+  {id:7,name:'Team 7',members:['Vincent Cracchiolo','Safa Farooq','Harshita Makan','Lokeshwar Vijayasankar'],quizPts:0,partPts:0,socialPts:0,tieBreakPts:0},
+],activeQuestion:null,closedQuestions:[],answers:{},log:[],socialApplied:false,celebration:null,version:0};
+let activeTeamId=null,lastVersion=-1,currentMain='scoreboard',lastCelebrationTs=0;
 
 // --- Firebase helpers ---
 function normalizeState(s){
@@ -417,6 +429,7 @@ function normalizeState(s){
   if(s.teams){
     if(!Array.isArray(s.teams))s.teams=Object.values(s.teams);
     s.teams.forEach(t=>{if(!Array.isArray(t.members))t.members=t.members?Object.values(t.members):[];});
+    s.teams.forEach(t=>{if(t.tieBreakPts===undefined)t.tieBreakPts=0;});
   }
   return s;
 }
@@ -459,7 +472,7 @@ function showMain(name,btn){currentMain=name;document.querySelectorAll('.view').
 function renderSubnav(){document.getElementById('team-subnav').innerHTML=state.teams.filter(t=>!t.isFacilitator).map(t=>`<button class="team-tab ${activeTeamId===t.id?'active':''}" onclick="selectTeam(${t.id})">${t.name}</button>`).join('');}
 function selectTeam(id){activeTeamId=id;renderSubnav();renderQuizTeamView();}
 
-function totalScore(t){if(t.isFacilitator)return 0;return Math.min(900,BASE_SCORE+t.quizPts+t.partPts+t.socialPts);}
+function totalScore(t){if(t.isFacilitator)return 0;return Math.min(900,BASE_SCORE+t.quizPts+t.partPts+t.socialPts)+(t.tieBreakPts||0);}
 
 function renderScoreboard(){
   const playing=state.teams.filter(t=>!t.isFacilitator).sort((a,b)=>a.id-b.id);
@@ -540,6 +553,14 @@ async function applySocial(){
     t.socialPts=t.members.reduce((s,n)=>s+calcSocial(n),0);
     addLog(`${t.name} social score: ${t.socialPts} (${t.members.length} members)`,'neutral');
   });
+  // Tie-break: if multiple teams would cap at 900, randomly pick one winner
+  const nonFac=state.teams.filter(t=>!t.isFacilitator);
+  const capped=nonFac.filter(t=>BASE_SCORE+t.quizPts+t.partPts+t.socialPts>=900);
+  if(capped.length>1){
+    const winner=capped[Math.floor(Math.random()*capped.length)];
+    capped.forEach(t=>{t.tieBreakPts=(t===winner)?0:-1;});
+    addLog(`Tie-break: ${winner.name} wins the 900 cap (${capped.length} teams tied).`,'neutral');
+  }
   state.socialApplied=true;
   addLog('Social scores applied to all teams.','neutral');
   state.version=(state.version||0)+1;
@@ -550,7 +571,7 @@ async function applySocial(){
 
 async function resetScores(){
   if(!confirm('Reset all scores and answers? Teams kept.'))return;
-  state.teams.forEach(t=>{t.quizPts=0;t.partPts=0;t.socialPts=0;});
+  state.teams.forEach(t=>{t.quizPts=0;t.partPts=0;t.socialPts=0;t.tieBreakPts=0;});
   state.answers={};state.activeQuestion=null;state.closedQuestions=[];state.socialApplied=false;state.log=[];
   state.version=(state.version||0)+1;
   lastVersion=state.version;
@@ -561,7 +582,7 @@ async function resetScores(){
 
 async function fullReset(){
   if(!confirm('Full reset? Clears EVERYTHING.'))return;
-  state={teams:Array.from({length:7},(_,i)=>({id:i+1,name:`Team ${i+1}`,members:[],quizPts:0,partPts:0,socialPts:0})),activeQuestion:null,closedQuestions:[],answers:{},log:[],socialApplied:false,version:1};
+  state={teams:Array.from({length:7},(_,i)=>({id:i+1,name:`Team ${i+1}`,members:[],quizPts:0,partPts:0,socialPts:0,tieBreakPts:0})),activeQuestion:null,closedQuestions:[],answers:{},log:[],socialApplied:false,celebration:null,version:1};
   lastVersion=state.version;
   try{ await gameRef.set(state); render(); showToast('Full reset done!');
   }catch(e){ showToast('Reset failed — try again.',true); }
@@ -569,10 +590,43 @@ async function fullReset(){
 
 function renderAlgorithm(){document.getElementById('social-breakdown-body').innerHTML=ALL_STUDENTS.map(name=>{const d=SOCIAL_RAW[name]||{},s=calcSocial(name);return`<tr><td>${name}</td><td>${d.posted?'✓':'—'}</td><td>${d.photo?'✓ (+30)':'—'}</td><td>${d.words>0?'+'+d.words:'—'}</td><td>${d.req?'✓':'—'}</td><td>${d.fun?'✓':'—'}</td><td>${d.contact?'✓':'—'}</td><td style="color:var(--gold-light);font-weight:500;">${s}</td></tr>`;}).join('');}
 
+function checkCelebration(){
+  const c=state.celebration;
+  if(c&&c.ts>lastCelebrationTs){lastCelebrationTs=c.ts;if(c.type==='redEnvelope')launchRedEnvelopes();}
+}
+function launchRedEnvelopes(){
+  const old=document.getElementById('cel-overlay');if(old)old.remove();
+  const ov=document.createElement('div');ov.id='cel-overlay';ov.className='cel-overlay';
+  document.body.appendChild(ov);
+  const count=12;
+  for(let i=0;i<count;i++){
+    const delay=(i*0.3).toFixed(2),dur=(2.8+Math.random()*1.4).toFixed(2),left=(4+Math.random()*88).toFixed(1);
+    const env=document.createElement('div');env.className='cel-env';
+    env.style.cssText=`left:${left}%;animation-duration:${dur}s;animation-delay:${delay}s;`;
+    const body=document.createElement('div');body.className='cel-env-body';
+    body.innerHTML='<div class="cel-env-fu">福</div>';env.appendChild(body);
+    const coins=3+Math.floor(Math.random()*3);
+    for(let c=0;c<coins;c++){
+      const coin=document.createElement('div');coin.className='cel-coin';
+      const dx=((Math.random()-0.5)*70).toFixed(0);
+      const cdur=(0.7+Math.random()*0.5).toFixed(2),cdelay=(parseFloat(delay)+0.25+c*0.12).toFixed(2);
+      coin.style.cssText=`--coin-dx:${dx}px;left:${15+Math.random()*38}px;animation-duration:${cdur}s;animation-delay:${cdelay}s;`;
+      env.appendChild(coin);
+    }
+    ov.appendChild(env);
+  }
+  setTimeout(()=>{const o=document.getElementById('cel-overlay');if(o)o.remove();},(count*0.3+4.5)*1000);
+}
+async function launchCelebration(){
+  state.celebration={type:'redEnvelope',ts:Date.now()};
+  addLog('🧧 Red envelope celebration launched!','neutral');
+  await saveState();render();showToast('🧧 Red envelopes launched!');
+}
+
 function addLog(msg,type='neutral'){const time=new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});state.log.unshift({msg,type,time});if(state.log.length>100)state.log=state.log.slice(0,100);}
 function showToast(msg,isErr=false){const t=document.getElementById('toast');t.textContent=msg;t.className=isErr?'err show':'show';setTimeout(()=>t.className='',2800);}
 
-function render(){renderSubnav();renderScoreboard();renderSetup();renderFacilitator();renderAlgorithm();if(currentMain==='quiz')renderQuizTeamView();}
+function render(){renderSubnav();renderScoreboard();renderSetup();renderFacilitator();renderAlgorithm();if(currentMain==='quiz')renderQuizTeamView();checkCelebration();}
 
 (async()=>{await loadState();render();startSync();})();
 
